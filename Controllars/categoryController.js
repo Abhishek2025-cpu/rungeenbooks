@@ -1,23 +1,58 @@
 const Category = require('../Models/categoryModel');
-const { cloudinary } = require('../config/cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-// Add Category
+// Optional: Unique ID generator (or you can remove this logic if not needed)
+
+
 exports.createCategory = async (req, res) => {
   try {
+    console.log("➡️ Received request:", req.body);
+    console.log("➡️ Files received:", req.files);
+
     const { name } = req.body;
-    if (!name || req.files.length === 0) {
-      return res.status(400).json({ message: 'Name and images are required.' });
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'At least one image is required' });
     }
 
-    const images = req.files.map(file => ({
-      public_id: file.filename,
-      url: file.path,
-    }));
+    const uploadImageToCloudinary = (fileBuffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'categories', resource_type: 'image' },
+          (err, result) => {
+            if (err) {
+              console.error("❌ Cloudinary Upload Error:", err);
+              return reject(new Error("Cloudinary error: " + err.message));
+            }
+            resolve({
+              url: result.secure_url,
+              public_id: result.public_id,
+            });
+          }
+        );
+        stream.end(fileBuffer);
+      });
+    };
 
-    const category = await Category.create({ name, images });
-    res.status(201).json({ message: 'Category created', category });
+    const uploadedImages = await Promise.all(
+      req.files.map(file => uploadImageToCloudinary(file.buffer))
+    );
+
+    const category = new Category({
+      name,
+      images: uploadedImages
+    });
+
+    await category.save();
+
+    res.status(201).json({
+      message: '✅ Category created successfully',
+      category
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("❌ Error creating category:", error);
+    res.status(500).json({ message: '❌ Category creation failed', error: error.message });
   }
 };
 
