@@ -11,7 +11,7 @@ const {
   updateCategory,
   deleteCategory,
   toggleCategoryStatus,
-} = require('../controllers/categoryController');
+} = require('../Controllars/categoryController');
 
 // Create
 router.post('/add-category', upload.array('images', 5), createCategory);
