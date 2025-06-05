@@ -17,8 +17,7 @@ const uploadImageToCloudinary = (fileBuffer) => {
 };
 
 // Add Book
-const Book = require('../Models/bookModel');
-const cloudinary = require('../config/cloudinary');
+
 
 exports.addBook = async (req, res) => {
   try {
