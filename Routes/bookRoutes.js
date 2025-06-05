@@ -1,14 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const bookController = require('../Controllars/bookController');
-const multer = require('multer');
+const upload = require('../middlewares/multer');
 
 
-// Setup multer
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// Route: Add a new book
 router.post(
   '/add-books',
   upload.fields([

@@ -1,6 +1,8 @@
 const Book = require('../Models/bookModel');
 const Category = require('../Models/categoryModel');
-const cloudinary = require('../config/cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+
 
 // Upload utility
 const uploadImageToCloudinary = (fileBuffer) => {
@@ -19,12 +21,13 @@ const uploadImageToCloudinary = (fileBuffer) => {
 // Add Book
 
 
+
+
 exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, category } = req.body;
     const files = req.files;
 
-    // Check for required fields
     if (!name || !author || !about || !language || !category || !files || !files.images || !files.pdf) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -32,17 +35,16 @@ exports.addBook = async (req, res) => {
     // Upload images
     const uploadedImages = await Promise.all(
       files.images.map(file =>
-        cloudinary.uploader.upload(file.path, { folder: "books/images" })
+        cloudinary.uploader.upload(file.path, { folder: 'books/images' })
       )
     );
 
     // Upload PDF
     const uploadedPdf = await cloudinary.uploader.upload(files.pdf[0].path, {
-      folder: "books/pdf",
-      resource_type: "raw", // important for PDF
+      folder: 'books/pdf',
+      resource_type: 'raw',
     });
 
-    // Create new book
     const newBook = new Book({
       name,
       author,
@@ -58,7 +60,7 @@ exports.addBook = async (req, res) => {
     await newBook.save();
 
     res.status(201).json({
-      message: "✅ Book added successfully",
+      message: '✅ Book added successfully',
       book: newBook,
     });
 
