@@ -20,7 +20,7 @@ const bookSchema = new mongoose.Schema({
   },
   language: {
     type: String,
-    enum: ['hindi', 'english'],
+    enum: ['Hindi', 'English'],
     required: true
   },
   like: {
