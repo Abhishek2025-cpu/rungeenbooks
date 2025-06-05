@@ -11,9 +11,9 @@ const upload = multer({ storage }).fields([
 
 
 // Routes
-router.post('/books', upload.array('images'), bookController.addBook);
-router.get('/books/category/:categoryId', bookController.getBooksByCategory);
-router.get('/books/:bookId', bookController.getBookById);
-router.patch('/books/:bookId/toggle-like', bookController.toggleLike);
+router.post('/add-books', upload.array('images'), bookController.addBook);
+router.get('/get-books/category/:categoryId', bookController.getBooksByCategory);
+router.get('/get-book/:bookId', bookController.getBookById);
+router.patch('/like-book/:bookId/toggle-like', bookController.toggleLike);
 
 module.exports = router;
