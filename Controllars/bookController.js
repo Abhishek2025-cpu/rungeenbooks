@@ -21,71 +21,45 @@ const uploadImageToCloudinary = (fileBuffer) => {
 
 exports.addBook = async (req, res) => {
   try {
-    const { name, author, about, language, categoryId } = req.body;
-    const images = req.files?.images || [];
-    const pdfFile = req.files?.pdf?.[0] || null;
+    const { name, author, about, language, category } = req.body;
+    const files = req.files;
 
-    if (!name || !author || !about || !language || !categoryId) {
+    // Check for required fields
+    if (!name || !author || !about || !language || !category || !files || !files.images || !files.pdf) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    if (images.length === 0) {
-      return res.status(400).json({ message: "At least one image is required" });
-    }
-
-    // Upload images to Cloudinary
-    const uploadImageToCloudinary = (fileBuffer) => {
-      return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'books', resource_type: 'image' },
-          (err, result) => {
-            if (err) return reject(err);
-            resolve({ url: result.secure_url, public_id: result.public_id });
-          }
-        );
-        stream.end(fileBuffer);
-      });
-    };
-
+    // Upload images
     const uploadedImages = await Promise.all(
-      images.map(file => uploadImageToCloudinary(file.buffer))
+      files.images.map(file =>
+        cloudinary.uploader.upload(file.path, { folder: "books/images" })
+      )
     );
 
-    // Upload PDF to Cloudinary
-    let uploadedPdf = null;
-    if (pdfFile) {
-      const uploadPdfToCloudinary = (fileBuffer) => {
-        return new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            { folder: 'books/pdf', resource_type: 'raw' },
-            (err, result) => {
-              if (err) return reject(err);
-              resolve({ url: result.secure_url, public_id: result.public_id });
-            }
-          );
-          stream.end(fileBuffer);
-        });
-      };
-      uploadedPdf = await uploadPdfToCloudinary(pdfFile.buffer);
-    }
+    // Upload PDF
+    const uploadedPdf = await cloudinary.uploader.upload(files.pdf[0].path, {
+      folder: "books/pdf",
+      resource_type: "raw", // important for PDF
+    });
 
-    // Create and save the book
+    // Create new book
     const newBook = new Book({
       name,
       author,
       about,
       language,
+      categoryId: category,
       images: uploadedImages,
-      category: categoryId,
-      like: false, // default
       pdf: uploadedPdf,
+      like: false,
+      isSubscribed: false,
     });
 
     await newBook.save();
 
     res.status(201).json({
       message: "✅ Book added successfully",
-      book: newBook
+      book: newBook,
     });
 
   } catch (error) {
@@ -93,6 +67,7 @@ exports.addBook = async (req, res) => {
     res.status(500).json({ message: "❌ Failed to add book", error: error.message });
   }
 };
+
 
 
 
