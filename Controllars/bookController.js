@@ -17,55 +17,84 @@ const uploadImageToCloudinary = (fileBuffer) => {
 };
 
 // Add Book
+const Book = require('../Models/bookModel');
+const cloudinary = require('../config/cloudinary');
+
 exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, categoryId } = req.body;
+    const images = req.files?.images || [];
+    const pdfFile = req.files?.pdf?.[0] || null;
 
-    const category = await Category.findById(categoryId);
-    if (!category) return res.status(404).json({ message: 'Category not found' });
-
-    const images = req.files.filter(file => file.mimetype.startsWith('image/'));
-    const pdfFile = req.files.find(file => file.mimetype === 'application/pdf');
-
-    if (images.length === 0) {
-      return res.status(400).json({ message: 'At least one image is required' });
+    if (!name || !author || !about || !language || !categoryId) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    const uploadedImages = await Promise.all(
-      images.map(file => uploadImageToCloudinary(file.buffer))
-    );
+    if (images.length === 0) {
+      return res.status(400).json({ message: "At least one image is required" });
+    }
 
-    let uploadedPdf = null;
-    if (pdfFile) {
-      uploadedPdf = await new Promise((resolve, reject) => {
+    // Upload images to Cloudinary
+    const uploadImageToCloudinary = (fileBuffer) => {
+      return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'books/pdf', resource_type: 'raw' },
+          { folder: 'books', resource_type: 'image' },
           (err, result) => {
             if (err) return reject(err);
             resolve({ url: result.secure_url, public_id: result.public_id });
           }
         );
-        stream.end(pdfFile.buffer);
+        stream.end(fileBuffer);
       });
+    };
+
+    const uploadedImages = await Promise.all(
+      images.map(file => uploadImageToCloudinary(file.buffer))
+    );
+
+    // Upload PDF to Cloudinary
+    let uploadedPdf = null;
+    if (pdfFile) {
+      const uploadPdfToCloudinary = (fileBuffer) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'books/pdf', resource_type: 'raw' },
+            (err, result) => {
+              if (err) return reject(err);
+              resolve({ url: result.secure_url, public_id: result.public_id });
+            }
+          );
+          stream.end(fileBuffer);
+        });
+      };
+      uploadedPdf = await uploadPdfToCloudinary(pdfFile.buffer);
     }
 
-    const book = new Book({
-      categoryId,
+    // Create and save the book
+    const newBook = new Book({
       name,
       author,
-      about: about.split('\n').filter(p => p.trim() !== ''),
+      about,
       language,
       images: uploadedImages,
-      pdf: uploadedPdf || undefined
+      category: categoryId,
+      like: false, // default
+      pdf: uploadedPdf,
     });
 
-    await book.save();
-    res.status(201).json({ message: '✅ Book added', book });
+    await newBook.save();
+
+    res.status(201).json({
+      message: "✅ Book added successfully",
+      book: newBook
+    });
 
   } catch (error) {
-    res.status(500).json({ message: '❌ Failed to add book', error: error.message });
+    console.error("❌ Error adding book:", error);
+    res.status(500).json({ message: "❌ Failed to add book", error: error.message });
   }
 };
+
 
 
 // Get all books for a category
