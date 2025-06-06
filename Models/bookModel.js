@@ -27,10 +27,12 @@ const bookSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  pdf: {
-  public_id: { type: String },
-  url: { type: String }
+pdf: {
+  file: Buffer,
+  filename: String,
+  mimetype: String
 }
+
 ,
   images: [
     {

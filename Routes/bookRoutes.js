@@ -3,7 +3,7 @@ const router = express.Router();
 const bookController = require('../Controllars/bookController');
 const upload = require('../middlewares/multer');
 
-
+// Add Book Route
 router.post(
   '/add-books',
   (req, res, next) => {
@@ -17,9 +17,16 @@ router.post(
   bookController.addBook
 );
 
-
+// Get books by category (PDF URL only if subscribed)
 router.get('/get-books/category/:categoryId', bookController.getBooksByCategory);
+
+// Get single book by ID (PDF URL only if subscribed)
 router.get('/get-book/:bookId', bookController.getBookById);
+
+// Serve PDF by book ID (streamed from MongoDB)
+router.get('/pdf/:bookId', bookController.getPdfByBookId);
+
+// Toggle like
 router.patch('/like-book/:bookId/toggle-like', bookController.toggleLike);
 
 module.exports = router;

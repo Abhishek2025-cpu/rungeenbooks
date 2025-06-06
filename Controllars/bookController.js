@@ -27,31 +27,17 @@ exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, category } = req.body;
     const files = req.files;
-       console.log("📥 name:", name);
-    console.log("📥 author:", author);
-    console.log("📥 about:", about);
-    console.log("📥 language:", language);
-    console.log("📥 category:", category);
-    console.log("📥 files:", files);
-    console.log("📥 images:", files?.images?.length);
-    console.log("📥 pdf:", files?.pdf?.length);
 
-    // if (!name || !author || !about || !language || !category || !files || !files.images || !files.pdf) {
-    //   return res.status(400).json({ message: "All fields are required" });
-    // }
-
-    // Upload images
+    // Upload images to Cloudinary
     const uploadedImages = await Promise.all(
       files.images.map(file =>
         cloudinary.uploader.upload(file.path, { folder: 'books/images' })
       )
     );
 
-    // Upload PDF
-    const uploadedPdf = await cloudinary.uploader.upload(files.pdf[0].path, {
-      folder: 'books/pdf',
-      resource_type: 'raw',
-    });
+    // Read PDF file buffer
+    const pdfFile = files.pdf[0];
+    const pdfBuffer = fs.readFileSync(pdfFile.path);
 
     const newBook = new Book({
       name,
@@ -60,7 +46,11 @@ exports.addBook = async (req, res) => {
       language,
       categoryId: category,
       images: uploadedImages,
-      pdf: uploadedPdf,
+      pdf: {
+        file: pdfBuffer,
+        filename: pdfFile.originalname,
+        mimetype: pdfFile.mimetype
+      },
       like: false,
       isSubscribed: false,
     });
@@ -80,13 +70,47 @@ exports.addBook = async (req, res) => {
 
 
 
+exports.getPdfByBookId = async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.bookId);
+    if (!book || !book.pdf?.file) {
+      return res.status(404).json({ message: 'PDF not found' });
+    }
+
+    res.set({
+      'Content-Type': book.pdf.mimetype,
+      'Content-Disposition': `inline; filename="${book.pdf.filename}"`,
+    });
+
+    res.send(book.pdf.file);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch PDF', error: error.message });
+  }
+};
+
 
 // Get all books for a category
 exports.getBooksByCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
-    const books = await Book.find({ categoryId }).sort({ createdAt: -1 });
-    res.status(200).json(books);
+    const subscribed = req.user?.subscribed;
+
+    const books = await Book.find({ categoryId }).sort({ createdAt: -1 }).populate('categoryId');
+
+    const updatedBooks = books.map(book => {
+      const bookObj = book.toObject();
+
+      // Add PDF URL only if subscribed
+      if (subscribed) {
+        bookObj.pdfUrl = `${req.protocol}://${req.get('host')}/books/pdf/${book._id}`;
+      } else {
+        delete bookObj.pdf;
+      }
+
+      return bookObj;
+    });
+
+    res.status(200).json(updatedBooks);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch books', error: error.message });
   }
@@ -98,11 +122,13 @@ exports.getBookById = async (req, res) => {
     const book = await Book.findById(req.params.bookId).populate('categoryId');
     if (!book) return res.status(404).json({ message: 'Book not found' });
 
-    const subscribed = req.user?.subscribed; // Or get it from DB if needed
+    const subscribed = req.user?.subscribed;
 
     const bookData = book.toObject();
-    if (!subscribed) {
-      delete bookData.pdf; // Hide PDF
+    if (subscribed) {
+      bookData.pdfUrl = `${req.protocol}://${req.get('host')}/books/pdf/${book._id}`;
+    } else {
+      delete bookData.pdf;
     }
 
     res.status(200).json(bookData);
@@ -110,6 +136,7 @@ exports.getBookById = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch book', error: error.message });
   }
 };
+
 
 
 // Toggle Like
