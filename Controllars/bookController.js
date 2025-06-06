@@ -29,31 +29,34 @@ exports.addBook = async (req, res) => {
     const files = req.files;
 
     // Upload images to Cloudinary
-    const uploadedImages = await Promise.all(
-      files.images.map(file =>
-        cloudinary.uploader.upload(file.path, { folder: 'books/images' })
-      )
-    );
+    // Upload images
+const uploadedImages = await Promise.all(
+  (files.images || []).map(file =>
+    cloudinary.uploader.upload(file.path, { folder: 'books/images' })
+  )
+);
 
-    // Read PDF file buffer
-    const pdfFile = files.pdf[0];
-    const pdfBuffer = fs.readFileSync(pdfFile.path);
+// Upload PDF
+const uploadedPdf = files.pdf?.[0];
+if (!uploadedPdf) {
+  return res.status(400).json({ message: "PDF file is required" });
+}
 
-    const newBook = new Book({
-      name,
-      author,
-      about,
-      language,
-      categoryId: category,
-      images: uploadedImages,
-      pdf: {
-        file: pdfBuffer,
-        filename: pdfFile.originalname,
-        mimetype: pdfFile.mimetype
-      },
-      like: false,
-      isSubscribed: false,
-    });
+const newBook = new Book({
+  name,
+  author,
+  about,
+  language,
+  categoryId: category,
+  images: uploadedImages,
+  pdf: {
+    data: require('fs').readFileSync(uploadedPdf.path),
+    contentType: uploadedPdf.mimetype,
+    originalName: uploadedPdf.originalname,
+  },
+  like: false,
+  isSubscribed: false,
+});
 
     await newBook.save();
 
