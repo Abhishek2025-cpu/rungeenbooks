@@ -6,12 +6,17 @@ const upload = require('../middlewares/multer');
 
 router.post(
   '/add-books',
+  (req, res, next) => {
+    console.log('🔥 Route /api/books/add-books HIT');
+    next();
+  },
   upload.fields([
     { name: 'images', maxCount: 10 },
     { name: 'pdf', maxCount: 1 },
   ]),
   bookController.addBook
 );
+
 
 router.get('/get-books/category/:categoryId', bookController.getBooksByCategory);
 router.get('/get-book/:bookId', bookController.getBookById);

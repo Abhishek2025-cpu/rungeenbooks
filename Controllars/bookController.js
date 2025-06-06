@@ -27,6 +27,14 @@ exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, category } = req.body;
     const files = req.files;
+       console.log("📥 name:", name);
+    console.log("📥 author:", author);
+    console.log("📥 about:", about);
+    console.log("📥 language:", language);
+    console.log("📥 category:", category);
+    console.log("📥 files:", files);
+    console.log("📥 images:", files?.images?.length);
+    console.log("📥 pdf:", files?.pdf?.length);
 
     if (!name || !author || !about || !language || !category || !files || !files.images || !files.pdf) {
       return res.status(400).json({ message: "All fields are required" });
