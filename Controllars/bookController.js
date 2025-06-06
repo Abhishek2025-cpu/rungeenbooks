@@ -36,9 +36,9 @@ exports.addBook = async (req, res) => {
     console.log("📥 images:", files?.images?.length);
     console.log("📥 pdf:", files?.pdf?.length);
 
-    if (!name || !author || !about || !language || !category || !files || !files.images || !files.pdf) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+    // if (!name || !author || !about || !language || !category || !files || !files.images || !files.pdf) {
+    //   return res.status(400).json({ message: "All fields are required" });
+    // }
 
     // Upload images
     const uploadedImages = await Promise.all(
