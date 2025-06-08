@@ -3,30 +3,19 @@ const router = express.Router();
 const bookController = require('../Controllars/bookController');
 const upload = require('../middlewares/multer');
 
-// Add Book Route
+// 🔥 Add Book Route (images only)
 router.post(
   '/add-books',
-  (req, res, next) => {
-    console.log('🔥 Route /api/books/add-books HIT');
-    next();
-  },
   upload.fields([
-    { name: 'images', maxCount: 10 },
-    { name: 'pdf', maxCount: 1 },
+    { name: 'images', maxCount: 10 }
   ]),
   bookController.addBook
 );
 
-// Get books by category (PDF URL only if subscribed)
+// 📚 Get books by category
 router.get('/get-books/category/:categoryId', bookController.getBooksByCategory);
 
-// Get single book by ID (PDF URL only if subscribed)
+// 📘 Get single book by ID
 router.get('/get-book/:bookId', bookController.getBookById);
-
-// Serve PDF by book ID (streamed from MongoDB)
-router.get('/pdf/:bookId', bookController.getPdfByBookId);
-
-// Toggle like
-router.patch('/like-book/:bookId/toggle-like', bookController.toggleLike);
 
 module.exports = router;
