@@ -1,12 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const bookController = require('../Controllars/booksController');
-const upload = require('../middlewares/Multerconfig');
+const { addBook, getBooksByCategory } = require('../Controllers/booksController');
+const upload = require('../middlewares/Multerconfig'); // your multer setup
 
-// Add a book to a category
-router.post('/add-book/:categoryId', upload.array('images', 5), bookController.addBook);
-
-// Get all books by category
-router.get('/get-books/:categoryId', bookController.getBooksByCategory);
+router.post('/add-book', upload.array('images'), addBook);
+router.get('/category/:categoryId', getBooksByCategory);
 
 module.exports = router;
