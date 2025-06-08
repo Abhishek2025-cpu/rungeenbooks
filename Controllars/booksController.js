@@ -10,9 +10,9 @@ exports.addBook = async (req, res) => {
   try {
     const { name, author, about, status, categoryId, language } = req.body;
 
-    if (!name || !author || !language || !categoryId) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
+    // if (!name || !author || !language || !categoryId) {
+    //   return res.status(400).json({ error: "Missing required fields" });
+    // }
 
     const category = await Category.findById(categoryId);
     if (!category) return res.status(404).json({ error: 'Category not found' });
