@@ -164,8 +164,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Add Book (local upload - images only)
-const fs = require('fs');
-const Book = require('../Models/bookModel');
+
 
 exports.addBook = async (req, res) => {
   try {
