@@ -3,8 +3,8 @@ const Category = require('../Models/categoryModel');
 const fs = require('fs');
 const path = require('path');
 
-const Book = require('../Models/book');
-const Category = require('../Models/category');
+
+
 
 exports.addBook = async (req, res) => {
   try {
