@@ -164,19 +164,30 @@ const fs = require('fs');
 const path = require('path');
 
 // Add Book (local upload - images only)
+const fs = require('fs');
+const Book = require('../Models/bookModel');
+
 exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, category } = req.body;
+    const files = req.files;
 
-    const imagePaths = req.files?.images?.map(file => file.path) || [];
+    // ✅ Check if images exist
+    const uploadedImages = (files?.images || []).map(file => ({
+      filename: file.filename,
+      path: file.path,
+      mimetype: file.mimetype
+    }));
 
+    // ✅ Create new book
     const newBook = new Book({
       name,
       author,
-      about: Array.isArray(about) ? about : [about],
+      about: Array.isArray(about) ? about : [about], // ensure it's array
       language,
-      category: category,
-      images: imagePaths.map(p => ({ url: `${req.protocol}://${req.get('host')}/${p}` })),
+      category,
+      images: uploadedImages,
+      like: false
     });
 
     await newBook.save();
@@ -191,6 +202,7 @@ exports.addBook = async (req, res) => {
     res.status(500).json({ message: "❌ Failed to add book", error: error.message });
   }
 };
+
 
 
 // Get books by category
