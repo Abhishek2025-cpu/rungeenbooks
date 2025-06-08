@@ -93,3 +93,67 @@ exports.getBooksByCategory = async (req, res) => {
 
   res.json({ message: '✅ Books fetched successfully', books: result });
 };
+
+
+
+// {
+//   "message": "✅ Books fetched successfully",
+//   "books": [
+//     {
+//       "_id": "684579c67a52c6b0e1ed6324",
+//       "name": "The Jungle Book",
+//       "category": "684567c1298c26f3da04cb9a",
+//       "author": "Rungeen Singh",
+//       "language": "English",
+//       "images": [
+//         "https://res.cloudinary.com/demo/image/upload/v12345678/sample1.jpg",
+//         "https://res.cloudinary.com/demo/image/upload/v12345678/sample2.jpg"
+//       ],
+//       "averageRating": 4.3,
+//       "ratingCount": 50,
+//       "reviewCount": 36,
+//       "likeCount": 120,
+//       "reviews": [
+//         {
+//           "_id": "684580c67a52c6b0e1ed1234",
+//           "text": "A classic! Timeless storytelling.",
+//           "user": {
+//             "_id": "684562a1298c26f3da04aaaa",
+//             "firstname": "Amit",
+//             "lastname": "Verma"
+//           },
+//           "createdAt": "2025-06-08T12:34:56.789Z"
+//         },
+//         {
+//           "_id": "684580c67a52c6b0e1ed5678",
+//           "text": "Great for kids and nostalgic for adults.",
+//           "user": {
+//             "_id": "684562a1298c26f3da04bbbb",
+//             "firstname": "Neha",
+//             "lastname": "Sharma"
+//           },
+//           "createdAt": "2025-06-08T13:02:12.456Z"
+//         }
+//       ],
+//       "createdAt": "2025-06-08T11:53:42.376Z",
+//       "updatedAt": "2025-06-08T11:53:42.376Z"
+//     },
+//     {
+//       "_id": "68457ac67a52c6b0e1ed6325",
+//       "name": "Harry Potter",
+//       "category": "684567c1298c26f3da04cb9a",
+//       "author": "J.K. Rowling",
+//       "language": "English",
+//       "images": [
+//         "https://res.cloudinary.com/demo/image/upload/v12345678/harry1.jpg"
+//       ],
+//       "averageRating": 4.8,
+//       "ratingCount": 95,
+//       "reviewCount": 80,
+//       "likeCount": 300,
+//       "reviews": [],
+//       "createdAt": "2025-06-08T12:04:38.735Z",
+//       "updatedAt": "2025-06-08T12:04:38.735Z"
+//     }
+//   ]
+// }
