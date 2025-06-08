@@ -6,7 +6,7 @@ const bookSchema = new mongoose.Schema({
   about: { type: String },
   language: { type: String, required: true },
   status: { type: String, enum: ['available', 'unavailable'], default: 'available' },
-  category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   images: [{ type: String }]
 }, { timestamps: true });
 

@@ -27,7 +27,7 @@ exports.addBook = async (req, res) => {
       about,
       language,
       status,
-      category: category._id,
+      category: categoryId,
       images: imagePaths,
     });
 
