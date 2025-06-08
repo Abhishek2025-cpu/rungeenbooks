@@ -168,9 +168,9 @@ exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, category } = req.body;
 
-    if (!name || !author || !about || !language || !category) {
-      return res.status(400).json({ error: "All required fields must be provided." });
-    }
+    // if (!name || !author || !about || !language || !category) {
+    //   return res.status(400).json({ error: "All required fields must be provided." });
+    // }
 
     // Check if category exists
     const existingCategory = await Category.findById(category);
