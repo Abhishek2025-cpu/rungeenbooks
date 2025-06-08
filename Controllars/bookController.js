@@ -160,6 +160,8 @@
 
 const Book = require('../Models/bookModel');
 const Category = require('../Models/categoryModel');
+const Review = require('../Models/Review');
+const Like = require('../Models/Like');
 const fs = require('fs');
 const path = require('path');
 
@@ -242,13 +244,28 @@ exports.addBook = async (req, res) => {
 // Get books by category
 exports.getBooksByCategory = async (req, res) => {
   try {
-    const { categoryId } = req.params;
-    const books = await Book.find({ category: categoryId }).sort({ createdAt: -1 }).populate('category');
-    res.status(200).json(books);
+    const categoryId = req.params.categoryId;
+    const books = await Book.find({ category: categoryId });
+
+    const enhancedBooks = await Promise.all(books.map(async book => {
+      const reviews = await Review.find({ bookId: book._id }).populate('userId', 'firstname lastname');
+      const likesCount = await Like.countDocuments({ bookId: book._id });
+      const averageRating = reviews.length ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : null;
+
+      return {
+        ...book.toObject(),
+        reviews,
+        likesCount,
+        averageRating
+      };
+    }));
+
+    res.json({ books: enhancedBooks });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch books', error: error.message });
+    res.status(500).json({ message: '❌ Failed to fetch books', error: error.message });
   }
 };
+
 
 // Get single book by ID
 exports.getBookById = async (req, res) => {
