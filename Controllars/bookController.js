@@ -175,7 +175,7 @@ exports.addBook = async (req, res) => {
       author,
       about: Array.isArray(about) ? about : [about],
       language,
-      categoryId: category,
+      category: category,
       images: imagePaths.map(p => ({ url: `${req.protocol}://${req.get('host')}/${p}` })),
     });
 
