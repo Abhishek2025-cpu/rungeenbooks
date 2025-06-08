@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const categoryRoutes = require('./Routes/categoryRoutes');
-const authRoutes = require('./Routes/authRoutes');//updated code
+const authRoutes = require('./Routes/authRoutes');//updated code new
 const bookRoutes = require('./Routes/bookRoutes');
 const BookRoutes = require('./Routes/BooksRoute');
 const path = require('path');
