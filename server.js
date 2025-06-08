@@ -13,6 +13,20 @@ app.use(authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/book', BookRoutes);
+// 404 handler
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('🔥 Global Error:', err.stack || err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message || 'Unexpected error',
+  });
+});
+
 
 
 
