@@ -168,30 +168,15 @@ exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, category } = req.body;
 
-    // if (!name || !author || !about || !language || !category) {
-    //   return res.status(400).json({ error: "All required fields must be provided." });
-    // }
-
-    // Check if category exists
-    const existingCategory = await Category.findById(category);
-    if (!existingCategory) {
-      return res.status(404).json({ error: "Category not found" });
-    }
-
-    // Handle uploaded images
-    const images = req.files?.images || [];
-    const imagePaths = images.map(file => ({
-      url: `/uploads/${file.filename}`,
-      public_id: file.filename
-    }));
+    const imagePaths = req.files?.images?.map(file => file.path) || [];
 
     const newBook = new Book({
       name,
       author,
-      about,
+      about: Array.isArray(about) ? about : [about],
       language,
-      category,
-      images: imagePaths,
+      categoryId: category,
+      images: imagePaths.map(p => ({ url: `${req.protocol}://${req.get('host')}/${p}` })),
     });
 
     await newBook.save();
@@ -206,6 +191,7 @@ exports.addBook = async (req, res) => {
     res.status(500).json({ message: "❌ Failed to add book", error: error.message });
   }
 };
+
 
 // Get books by category
 exports.getBooksByCategory = async (req, res) => {
