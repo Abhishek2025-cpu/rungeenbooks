@@ -1,10 +1,10 @@
-// Models/book.js
 const mongoose = require('mongoose');
 
 const bookSchema = new mongoose.Schema({
   name: { type: String, required: true },
   author: { type: String, required: true },
   about: { type: String },
+  language: { type: String, required: true }, // ✅ New field
   status: {
     type: String,
     enum: ['available', 'unavailable'],
@@ -15,7 +15,7 @@ const bookSchema = new mongoose.Schema({
     ref: 'Category',
     required: true,
   },
-  images: [String], // Path to uploaded images
+  images: [String], // Paths of book images
 }, { timestamps: true });
 
 module.exports = mongoose.models.Book || mongoose.model('Book', bookSchema);

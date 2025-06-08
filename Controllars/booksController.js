@@ -3,36 +3,41 @@ const Category = require('../Models/categoryModel');
 const fs = require('fs');
 const path = require('path');
 
+const Book = require('../Models/book');
+const Category = require('../Models/category');
+
 exports.addBook = async (req, res) => {
   try {
-    const { bookName, author, about, status } = req.body;
-    const { categoryId } = req.params;
+    const { name, author, about, status, categoryId, language } = req.body;
+    
+    if (!name || !author || !language || !categoryId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
     const category = await Category.findById(categoryId);
-    if (!category) return res.status(404).json({ message: 'Category not found' });
+    if (!category) return res.status(404).json({ error: 'Category not found' });
 
-    const images = req.files.map(file => ({
-      filename: file.filename,
-      path: file.path,
-    }));
+    const imagePaths = req.files.map(file => file.path);
 
     const book = new Book({
-      categoryId,
-      bookName,
+      name,
       author,
       about,
+      language,
       status,
-      images,
+      category: categoryId,
+      images: imagePaths,
     });
 
     await book.save();
     res.status(201).json({ message: 'Book added successfully', book });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error adding book:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 exports.getBooksByCategory = async (req, res) => {
   try {
