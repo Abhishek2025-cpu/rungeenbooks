@@ -166,26 +166,60 @@ const path = require('path');
 // Add Book (local upload - images only)
 
 
+
+const cloudinary = require('../config/cloudinary');
+
+
 exports.addBook = async (req, res) => {
   try {
     const { name, author, about, language, category } = req.body;
-    const files = req.files;
 
-    // ✅ Check if images exist
-    const uploadedImages = (files?.images || []).map(file => ({
-      filename: file.filename,
-      path: file.path,
-      mimetype: file.mimetype
-    }));
+    const uploadedImages = [];
 
-    // ✅ Create new book
+    // ✅ Upload each image to Cloudinary
+    if (req.files?.images && req.files.images.length > 0) {
+      for (const file of req.files.images) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'books/images'
+        });
+
+        uploadedImages.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+        });
+
+        // ❌ Optional: delete local file after upload
+        fs.unlinkSync(file.path);
+      }
+    }
+
+    // ✅ Upload PDF
+    let uploadedPdf = null;
+    if (req.files?.pdf && req.files.pdf.length > 0) {
+      const pdfFile = req.files.pdf[0];
+
+      const result = await cloudinary.uploader.upload(pdfFile.path, {
+        resource_type: "raw", // for non-images like PDFs
+        folder: 'books/pdfs'
+      });
+
+      uploadedPdf = {
+        url: result.secure_url,
+        public_id: result.public_id,
+      };
+
+      fs.unlinkSync(pdfFile.path);
+    }
+
+    // ✅ Save book to DB
     const newBook = new Book({
       name,
       author,
-      about: Array.isArray(about) ? about : [about], // ensure it's array
+      about: Array.isArray(about) ? about : [about],
       language,
       category,
       images: uploadedImages,
+      pdf: uploadedPdf,
       like: false
     });
 
@@ -197,10 +231,11 @@ exports.addBook = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Error adding book:", error);
-    res.status(500).json({ message: "❌ Failed to add book", error: error.message });
+    console.error('❌ Error adding book:', error);
+    res.status(500).json({ message: '❌ Failed to add book', error: error.message });
   }
 };
+
 
 
 

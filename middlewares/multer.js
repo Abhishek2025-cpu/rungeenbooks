@@ -8,7 +8,7 @@ if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath);
 }
 
-// Storage config
+// Storage configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadPath);
@@ -18,14 +18,14 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter (optional)
+// File filter for images and pdf
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif/;
+  const allowedTypes = /jpeg|jpg|png|gif|pdf/;
   const ext = path.extname(file.originalname).toLowerCase();
   if (allowedTypes.test(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Only images allowed'), false);
+    cb(new Error('Only image or PDF files are allowed'), false);
   }
 };
 
