@@ -27,19 +27,14 @@ const bookSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-pdf: {
-  file: Buffer,
-  filename: String,
-  mimetype: String
-}
+images: [
+  {
+    url: String,
+    public_id: String
+  }
+],
+pdfUrl: String,
 
-,
-  images: [
-    {
-      public_id: String,
-      url: String
-    }
-  ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Book', bookSchema);
