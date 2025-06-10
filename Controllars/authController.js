@@ -171,22 +171,30 @@ exports.resetPassword = async (req, res) => {
     const { email, otp, newPassword } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(404).json({ success: 0, message: 'User not found' });
+    if (!user) return res.status(404).json({ success: 0, message: 'User not found' });
 
-    if (user.otp !== otp || user.otpExpires < new Date())
-      return res.status(400).json({ success: 0, message: 'Invalid or expired OTP' });
+    // ✅ Check OTP & Expiry
+    if (!user.otp || !user.otpExpires || String(user.otp) !== String(otp)) {
+      return res.status(400).json({ success: 0, message: 'Invalid OTP' });
+    }
 
+    if (user.otpExpires < new Date()) {
+      return res.status(400).json({ success: 0, message: 'OTP expired' });
+    }
+
+    // ✅ Update password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     user.password = hashedPassword;
+
+    // ✅ Clear OTP fields
     user.otp = null;
     user.otpExpires = null;
+
     await user.save();
 
-    res.status(200).json({ success: 1, message: 'Password reset successful' });
+    res.status(200).json({ success: 1, message: 'Password reset successfully' });
   } catch (err) {
     console.error('Reset Password Error:', err);
-    res.status(500).json({ success: 0, message: 'Server error during password reset', error: err.message });
+    res.status(500).json({ success: 0, message: 'Server error' });
   }
 };
