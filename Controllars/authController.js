@@ -16,7 +16,7 @@ exports.signup = async (req, res) => {
   try {
     const {
       firstname, lastname, username, country_code,
-      phone, email, password, registrationToken, deviceId
+      phone, email, password
     } = req.body;
 
     const existingUser = await User.findOne({ email });
@@ -29,7 +29,7 @@ exports.signup = async (req, res) => {
     const newUser = new User({
       firstname, lastname, username, country_code,
       phone, email, password: hashedPassword,
-      registrationToken, deviceId, otp, otpExpires
+      otp, otpExpires
     });
 
     await newUser.save();
@@ -41,12 +41,14 @@ exports.signup = async (req, res) => {
       text: `Your OTP is ${otp}`
     });
 
-    res.status(200).json({ data: { success: 1, message: 'Signup successful. OTP sent to email.' } });
+    res.status(200).json({ success: 1, message: 'Signup successful. OTP sent to email.' });
   } catch (err) {
-    console.error(err);
+    console.error('Signup Error:', err);
     res.status(500).json({ success: 0, message: 'Server error' });
   }
 };
+
+
 
 exports.verifyOTP = async (req, res) => {
   try {

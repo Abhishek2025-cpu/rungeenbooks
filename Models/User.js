@@ -1,5 +1,3 @@
-const mongoose = require('mongoose');
-
 const userSchema = new mongoose.Schema({
   firstname: String,
   lastname: String,
@@ -8,8 +6,6 @@ const userSchema = new mongoose.Schema({
   phone: String,
   email: { type: String, unique: true },
   password: String,
-  registrationToken: String,
-  deviceId: String,
   isVerified: { type: Boolean, default: false },
   otp: Number,
   otpExpires: Date
