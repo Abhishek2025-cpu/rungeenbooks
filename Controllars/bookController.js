@@ -312,3 +312,32 @@ exports.deleteBooksByCategory = async (req, res) => {
 };
 
 
+// PUT /api/books/update-by-category/:categoryId
+exports.updateBooksByCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const updateFields = req.body;
+
+    // Check if category exists
+    const categoryExists = await Category.findById(categoryId);
+    if (!categoryExists) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    // Update all books with the matching category
+    const result = await Book.updateMany(
+      { category: categoryId },
+      { $set: updateFields }
+    );
+
+    res.status(200).json({
+      message: '✅ Books updated successfully',
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('❌ Error updating books by category:', error);
+    res.status(500).json({ message: '❌ Failed to update books', error: error.message });
+  }
+};
+
+
