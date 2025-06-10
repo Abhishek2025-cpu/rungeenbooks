@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../Models/User');
 const cloudinary = require('../config/cloudinary');
 const fs = require('fs');
@@ -5,6 +6,12 @@ const fs = require('fs');
 exports.updateUserProfile = async (req, res) => {
   try {
     const userId = req.params.userId;
+
+    // Validate if userId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: 0, message: 'Invalid user ID format' });
+    }
+
     const { email, phone, username } = req.body;
 
     // Fetch current user
@@ -26,20 +33,37 @@ exports.updateUserProfile = async (req, res) => {
     if (req.file) {
       // Delete old image from Cloudinary (if exists)
       if (user.profileImage?.public_id) {
-        await cloudinary.uploader.destroy(user.profileImage.public_id);
+        try {
+          await cloudinary.uploader.destroy(user.profileImage.public_id);
+        } catch (cloudinaryErr) {
+          console.error('Cloudinary Delete Error:', cloudinaryErr);
+          // Consider whether to return an error or continue with the update
+          // based on your application's requirements.  For now, log and continue.
+        }
       }
 
       // Upload new image
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'user-profiles',
-      });
+      try {
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'user-profiles',
+        });
 
-      user.profileImage = {
-        url: result.secure_url,
-        public_id: result.public_id,
-      };
+        user.profileImage = {
+          url: result.secure_url,
+          public_id: result.public_id,
+        };
+      } catch (cloudinaryErr) {
+        console.error('Cloudinary Upload Error:', cloudinaryErr);
+        return res.status(500).json({ success: 0, message: 'Cloudinary upload failed', error: cloudinaryErr.message });
+      }
 
-      fs.unlinkSync(req.file.path); // Remove local temp file
+
+      try {
+        fs.unlinkSync(req.file.path); // Remove local temp file
+      } catch (fsErr) {
+        console.warn('Failed to delete temporary file:', fsErr);
+        // Non-critical error, log it but don't interrupt the process
+      }
     }
 
     // ✅ Update fields
