@@ -50,7 +50,7 @@ exports.updateUserProfile = async (req, res) => {
 
         // Upload new image
         const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'user-profiles',
+          folder: 'uploads',
         });
 
         user.profileImage = {
