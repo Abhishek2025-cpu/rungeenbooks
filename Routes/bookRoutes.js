@@ -17,5 +17,8 @@ router.get('/get-books/category/:categoryId', bookController.getBooksByCategory)
 
 // 📘 Get single book by ID
 router.get('/get-book/:bookId', bookController.getBookById);
+router.put('/books/update-by-category/:categoryId', bookController.updateBooksByCategory);
+router.delete('/books/delete-by-category/:categoryId', bookController.deleteBooksByCategory);
+
 
 module.exports = router;

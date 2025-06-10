@@ -278,3 +278,37 @@ exports.getBookById = async (req, res) => {
   }
 };
 
+// DELETE /api/books/delete-by-category/:categoryId
+exports.deleteBooksByCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+
+    const books = await Book.find({ category: categoryId });
+    if (!books.length) {
+      return res.status(404).json({ message: 'No books found in this category' });
+    }
+
+    // ❌ Delete Cloudinary assets (optional cleanup)
+    for (const book of books) {
+      for (const img of book.images) {
+        await cloudinary.uploader.destroy(img.public_id);
+      }
+      if (book.pdf?.public_id) {
+        await cloudinary.uploader.destroy(book.pdf.public_id, { resource_type: 'raw' });
+      }
+    }
+
+    // 🗑️ Delete books
+    const result = await Book.deleteMany({ category: categoryId });
+
+    res.status(200).json({
+      message: '✅ Books deleted successfully',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ Error deleting books by category:', error);
+    res.status(500).json({ message: '❌ Failed to delete books', error: error.message });
+  }
+};
+
+
