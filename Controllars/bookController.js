@@ -290,11 +290,38 @@ exports.getBooksByCategory = async (req, res) => {
 // Get single book by ID
 exports.getBookById = async (req, res) => {
   try {
-    const book = await Book.findById(req.params.bookId).populate('category');
-    if (!book) return res.status(404).json({ message: 'Book not found' });
-    res.status(200).json(book);
+    const { bookId } = req.params;
+
+    // 1. Get book with category populated
+    const book = await Book.findById(bookId).populate('category');
+    if (!book) {
+      return res.status(404).json({ message: '❌ Book not found' });
+    }
+
+    // 2. Fetch reviews
+    const reviews = await Review.find({ bookId });
+
+    // 3. Calculate average rating
+    const averageRating =
+      reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        : 0;
+
+    // 4. Get likes count
+    const likesCount = await Like.countDocuments({ bookId });
+
+    // 5. Attach additional fields to book
+    const bookWithExtras = {
+      ...book.toObject(),
+      reviews,
+      likesCount,
+      averageRating: parseFloat(averageRating.toFixed(1))
+    };
+
+    res.status(200).json(bookWithExtras);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch book', error: error.message });
+    console.error('Error in getBookById:', error);
+    res.status(500).json({ message: '❌ Failed to fetch book', error: error.message });
   }
 };
 
