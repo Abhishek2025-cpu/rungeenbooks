@@ -211,23 +211,32 @@ exports.addBook = async (req, res) => {
       pdfUrls.push(result.secure_url);
       fs.unlinkSync(pdf.path);
     }
+// const mongoose = require('mongoose');
 
-    const newBook = new Book({
-      name,
-      category,
-      about: Array.isArray(about) ? about : [about],
-      language,
-      images: {
-        coverImage: coverImageUrl,
-        otherImages,
-      },
-      pdf: pdfUrls,
-      authorDetails: {
-        name: authorName,
-        photo: authorPhoto,
-        info: authorInfo,
-      },
-    });
+// if (!mongoose.Types.ObjectId.isValid(category)) {
+//   return res.status(400).json({ message: '❌ Invalid category ID format' });
+// }
+
+
+const newBook = new Book({
+
+
+  name: name?.trim(),
+  category: category?.trim(), // ensure no leading/trailing whitespace
+  about: Array.isArray(about) ? about : [about],
+  language: language?.trim(),
+  images: {
+    coverImage: coverImageUrl, // assumed to be a valid URL string
+    otherImages,               // assumed to be an array of URLs
+  },
+  pdf: pdfUrls,                // assumed to be an array of URLs
+  authorDetails: {
+    name: authorName?.trim(),
+    photo: authorPhoto?.trim(),
+    info: authorInfo?.trim(),
+  },
+});
+
 
     await newBook.save();
 

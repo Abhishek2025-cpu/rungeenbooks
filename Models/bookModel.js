@@ -50,10 +50,11 @@
 const mongoose = require('mongoose');
 
 const bookSchema = new mongoose.Schema({
-  category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-  },
+category: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Category',
+  required: true
+},
   name: String,
   authorDetails: {
     name: String,
