@@ -172,6 +172,91 @@ const path = require('path');
 const cloudinary = require('../config/cloudinary');
 
 
+// exports.addBook = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       category,
+//       about,
+//       language,
+//       authorName,
+//       authorPhoto,
+//       authorInfo,
+//     } = req.body;
+
+//     const files = req.files;
+
+//     // ✅ Upload coverImage
+//     let coverImageUrl = '';
+//     if (files?.coverImage?.length > 0) {
+//       const result = await cloudinary.uploader.upload(files.coverImage[0].path, {
+//         folder: 'books/images',
+//       });
+//       coverImageUrl = result.secure_url;
+//       fs.unlinkSync(files.coverImage[0].path);
+//     }
+
+//     // ✅ Upload otherImages
+//     const otherImages = [];
+//     if (files?.otherImages?.length > 0) {
+//       for (const file of files.otherImages) {
+//         const result = await cloudinary.uploader.upload(file.path, {
+//           folder: 'books/images',
+//         });
+//         otherImages.push(result.secure_url);
+//         fs.unlinkSync(file.path);
+//       }
+//     }
+
+//     // ✅ Upload PDFs
+//     const pdfUrls = [];
+//     if (files?.pdf?.length > 0) {
+//       for (const file of files.pdf) {
+//         const result = await cloudinary.uploader.upload(file.path, {
+//           resource_type: 'raw',
+//           folder: 'books/pdfs',
+//         });
+//         pdfUrls.push(result.secure_url);
+//         fs.unlinkSync(file.path);
+//       }
+//     }
+
+//     // ✅ Save to DB
+//     const newBook = new Book({
+//       name: name?.trim(),
+//       category: category?.trim(),
+//       about: Array.isArray(about) ? about : [about],
+//       language: language?.trim(),
+//       images: {
+//         coverImage: coverImageUrl,
+//         otherImages,
+//       },
+//       pdf: pdfUrls,
+//       authorDetails: {
+//         name: authorName?.trim(),
+//         photo: authorPhoto?.trim(),
+//         info: authorInfo?.trim(),
+//       },
+//       like: false,
+//     });
+
+//     await newBook.save();
+
+//     res.status(201).json({
+//       message: '✅ Book added successfully',
+//       book: newBook,
+//     });
+
+//   } catch (error) {
+//     console.error('❌ Error adding book:', error);
+//     res.status(500).json({
+//       message: '❌ Failed to add book',
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 exports.addBook = async (req, res) => {
   try {
     const {
@@ -182,6 +267,7 @@ exports.addBook = async (req, res) => {
       authorName,
       authorPhoto,
       authorInfo,
+      pdf, // Accept direct URL(s)
     } = req.body;
 
     const files = req.files;
@@ -208,9 +294,18 @@ exports.addBook = async (req, res) => {
       }
     }
 
-    // ✅ Upload PDFs
-    const pdfUrls = [];
-    if (files?.pdf?.length > 0) {
+    // ✅ Use direct PDF URL(s) if provided
+    let pdfUrls = [];
+    if (pdf) {
+      if (Array.isArray(pdf)) {
+        pdfUrls = pdf;
+      } else if (typeof pdf === 'string') {
+        pdfUrls = [pdf];
+      }
+    }
+
+    // ✅ Upload PDF files only if no direct URLs
+    if (pdfUrls.length === 0 && files?.pdf?.length > 0) {
       for (const file of files.pdf) {
         const result = await cloudinary.uploader.upload(file.path, {
           resource_type: 'raw',
@@ -255,6 +350,7 @@ exports.addBook = async (req, res) => {
     });
   }
 };
+
 
 
 
