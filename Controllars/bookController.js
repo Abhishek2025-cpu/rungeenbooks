@@ -174,69 +174,71 @@ const cloudinary = require('../config/cloudinary');
 
 exports.addBook = async (req, res) => {
   try {
-    const { name, about, language, category, authorName, authorPhoto, authorInfo } = req.body;
+    const {
+      name,
+      category,
+      about,
+      language,
+      authorName,
+      authorPhoto,
+      authorInfo,
+    } = req.body;
 
-    const coverImageFile = req.files?.coverImage?.[0];
-    const otherImageFiles = req.files?.otherImages || [];
-    const pdfFiles = req.files?.pdf || [];
+    const files = req.files;
 
+    // ✅ Upload coverImage
     let coverImageUrl = '';
-    const otherImages = [];
-    const pdfUrls = [];
-
-    // Upload cover image
-    if (coverImageFile) {
-      const result = await cloudinary.uploader.upload(coverImageFile.path, {
-        folder: 'books/images'
+    if (files?.coverImage?.length > 0) {
+      const result = await cloudinary.uploader.upload(files.coverImage[0].path, {
+        folder: 'books/images',
       });
       coverImageUrl = result.secure_url;
-      fs.unlinkSync(coverImageFile.path);
+      fs.unlinkSync(files.coverImage[0].path);
     }
 
-    // Upload other images
-    for (const file of otherImageFiles) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: 'books/images'
-      });
-      otherImages.push(result.secure_url);
-      fs.unlinkSync(file.path);
+    // ✅ Upload otherImages
+    const otherImages = [];
+    if (files?.otherImages?.length > 0) {
+      for (const file of files.otherImages) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'books/images',
+        });
+        otherImages.push(result.secure_url);
+        fs.unlinkSync(file.path);
+      }
     }
 
-    // Upload PDFs
-    for (const pdf of pdfFiles) {
-      const result = await cloudinary.uploader.upload(pdf.path, {
-        resource_type: 'raw',
-        folder: 'books/pdfs'
-      });
-      pdfUrls.push(result.secure_url);
-      fs.unlinkSync(pdf.path);
+    // ✅ Upload PDFs
+    const pdfUrls = [];
+    if (files?.pdf?.length > 0) {
+      for (const file of files.pdf) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          resource_type: 'raw',
+          folder: 'books/pdfs',
+        });
+        pdfUrls.push(result.secure_url);
+        fs.unlinkSync(file.path);
+      }
     }
-// const mongoose = require('mongoose');
 
-// if (!mongoose.Types.ObjectId.isValid(category)) {
-//   return res.status(400).json({ message: '❌ Invalid category ID format' });
-// }
-
-
-const newBook = new Book({
-
-
-  name: name?.trim(),
-  category: category?.trim(), // ensure no leading/trailing whitespace
-  about: Array.isArray(about) ? about : [about],
-  language: language?.trim(),
-  images: {
-    coverImage: coverImageUrl, // assumed to be a valid URL string
-    otherImages,               // assumed to be an array of URLs
-  },
-  pdf: pdfUrls,                // assumed to be an array of URLs
-  authorDetails: {
-    name: authorName?.trim(),
-    photo: authorPhoto?.trim(),
-    info: authorInfo?.trim(),
-  },
-});
-
+    // ✅ Save to DB
+    const newBook = new Book({
+      name: name?.trim(),
+      category: category?.trim(),
+      about: Array.isArray(about) ? about : [about],
+      language: language?.trim(),
+      images: {
+        coverImage: coverImageUrl,
+        otherImages,
+      },
+      pdf: pdfUrls,
+      authorDetails: {
+        name: authorName?.trim(),
+        photo: authorPhoto?.trim(),
+        info: authorInfo?.trim(),
+      },
+      like: false,
+    });
 
     await newBook.save();
 
@@ -244,9 +246,13 @@ const newBook = new Book({
       message: '✅ Book added successfully',
       book: newBook,
     });
+
   } catch (error) {
     console.error('❌ Error adding book:', error);
-    res.status(500).json({ message: '❌ Failed to add book', error: error.message });
+    res.status(500).json({
+      message: '❌ Failed to add book',
+      error: error.message,
+    });
   }
 };
 
