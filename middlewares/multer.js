@@ -29,4 +29,11 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-module.exports = multer({ storage, fileFilter });
+// Export field-based uploader for coverImage, otherImages, and pdf
+const upload = multer({ storage, fileFilter }).fields([
+  { name: 'coverImage', maxCount: 1 },
+  { name: 'otherImages', maxCount: 5 },
+  { name: 'pdf', maxCount: 3 },
+]);
+
+module.exports = upload;

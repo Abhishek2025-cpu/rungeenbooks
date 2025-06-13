@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const bookController = require('../Controllars/bookController');
-const upload = require('../middlewares/multer');
+const upload = require('../middlewares/multer'); // your updated multer config
 
-// 🔥 Add Book Route (images only)
+// ✅ Add Book Route (with coverImage, otherImages, and pdf)
 router.post(
   '/add-books',
-  upload.fields([
-    { name: 'images', maxCount: 10 }
-  ]),
+  upload, // using multer.fields() internally
   bookController.addBook
 );
 
@@ -17,8 +15,11 @@ router.get('/get-books/category/:categoryId', bookController.getBooksByCategory)
 
 // 📘 Get single book by ID
 router.get('/get-book/:bookId', bookController.getBookById);
-router.put('/books/update-by-category/:categoryId', bookController.updateBooksByCategory);
-router.delete('/books/delete-by-category/:categoryId', bookController.deleteBooksByCategory);
 
+// 🛠 Update books by category
+router.put('/books/update-by-category/:categoryId', bookController.updateBooksByCategory);
+
+// ❌ Delete books by category
+router.delete('/books/delete-by-category/:categoryId', bookController.deleteBooksByCategory);
 
 module.exports = router;

@@ -53,22 +53,24 @@ const bookSchema = new mongoose.Schema({
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
-    required: true
   },
-  name: { type: String, required: true },
-  author: { type: String, required: true },
-  about: { type: [String], required: true },
-  language: {
-    type: String,
-    enum: ['Hindi', 'English'],
-    required: true
+  name: String,
+  authorDetails: {
+    name: String,
+    photo: String,
+    info: String,
   },
-  images: [
-    {
-      public_id: String,
-      url: String
-    }
-  ]
+  about: [String],
+  language: String,
+  images: {
+    coverImage: String,
+    otherImages: [String],
+  },
+  pdf: [String],
+  like: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Book', bookSchema);
