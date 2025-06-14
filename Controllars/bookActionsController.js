@@ -47,6 +47,37 @@ exports.postRatingAndReview = async (req, res) => {
   res.json({ message: '✅ Rating and review submitted' });
 };
 
+exports.getRatingsAndReviews = async (req, res) => {
+  const { bookId } = req.params;
+
+  // Check if book exists
+  const book = await Book.findById(bookId);
+  if (!book) {
+    return res.status(404).json({ message: '❌ Book not found' });
+  }
+
+  // Fetch ratings and reviews
+  const [ratings, reviews] = await Promise.all([
+    Rating.find({ book: bookId }),
+    Review.find({ book: bookId }).populate('user', 'firstname lastname')
+  ]);
+
+  const ratingValues = ratings.map(r => r.value);
+  const averageRating = ratingValues.length > 0
+    ? (ratingValues.reduce((a, b) => a + b) / ratingValues.length).toFixed(1)
+    : null;
+
+  res.json({
+    message: '✅ Book ratings and reviews fetched',
+    bookId,
+    averageRating: averageRating ? parseFloat(averageRating) : 0,
+    totalRatings: ratings.length,
+    totalReviews: reviews.length,
+    reviews
+  });
+};
+
+
 
 exports.postReview = async (req, res) => {
   const { userId, text } = req.body;
