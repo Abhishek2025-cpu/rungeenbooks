@@ -13,8 +13,17 @@ exports.postRating = async (req, res) => {
   }
 
   const user = await User.findById(userId);
-  if (!user || !user.isVerified) {
+  if (!user) {
+    return res.status(404).json({ message: '❌ User not found' });
+  }
+
+  if (!user.isVerified) {
     return res.status(403).json({ message: '❌ Only verified users can rate' });
+  }
+
+  const book = await Book.findById(bookId);
+  if (!book) {
+    return res.status(404).json({ message: '❌ Book not found' });
   }
 
   await Rating.findOneAndUpdate(
@@ -25,6 +34,7 @@ exports.postRating = async (req, res) => {
 
   res.json({ message: '✅ Rating submitted' });
 };
+
 
 exports.postReview = async (req, res) => {
   const { userId, text } = req.body;
