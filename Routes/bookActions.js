@@ -5,7 +5,7 @@ const {
   postReview,
   toggleLike,
   getBooksByCategory
-} = require('../controllers/bookActionsController');
+} = require('../Controllars/bookActionsController');
 
 // POST: Add rating (1–5)
 router.post('/rate/:bookId', postRating);
