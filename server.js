@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/books', bookRoutes);
-app.use('api/book',bookAction);
+app.use('/api/book',bookAction);
 app.use('/uploads', express.static('uploads'));
 
 // 404 handler
