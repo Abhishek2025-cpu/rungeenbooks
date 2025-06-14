@@ -1,5 +1,5 @@
 const Book = require('../Models/bookModel');
-const Rating = require('../Models/Rating');
+const Rating = require('../Models/Ratings');
 const Review = require('../Models/Review');
 const Like = require('../Models/Like');
 const User = require('../Models/User');
