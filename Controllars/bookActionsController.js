@@ -4,35 +4,47 @@ const Review = require('../Models/Review');
 const Like = require('../Models/Like');
 const User = require('../Models/User');
 
-exports.postRating = async (req, res) => {
-  const { userId, value } = req.body;
+exports.postRatingAndReview = async (req, res) => {
+  const { userId, rating, reviewDescription } = req.body;
   const { bookId } = req.params;
 
-  if (!value || value < 1 || value > 5) {
+  if (!rating || rating < 1 || rating > 5) {
     return res.status(400).json({ message: '❌ Rating must be between 1 and 5' });
   }
 
+  // Check user
   const user = await User.findById(userId);
   if (!user) {
     return res.status(404).json({ message: '❌ User not found' });
   }
 
   if (!user.isVerified) {
-    return res.status(403).json({ message: '❌ Only verified users can rate' });
+    return res.status(403).json({ message: '❌ Only verified users can rate and review' });
   }
 
+  // Check book
   const book = await Book.findById(bookId);
   if (!book) {
     return res.status(404).json({ message: '❌ Book not found' });
   }
 
+  // Submit rating (update or create)
   await Rating.findOneAndUpdate(
     { user: userId, book: bookId },
-    { value },
+    { value: rating },
     { upsert: true, new: true }
   );
 
-  res.json({ message: '✅ Rating submitted' });
+  // Submit review
+  if (reviewDescription) {
+    await Review.create({
+      user: userId,
+      book: bookId,
+      text: reviewDescription
+    });
+  }
+
+  res.json({ message: '✅ Rating and review submitted' });
 };
 
 
