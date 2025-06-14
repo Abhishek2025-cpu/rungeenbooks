@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const {
-  postRating,
+  postRatingAndReview,
   postReview,
   toggleLike,
   getBooksByCategory
 } = require('../Controllars/bookActionsController');
 
 // POST: Add rating (1–5)
-router.post('/rate/:bookId', postRating);
+router.post('/rate/:bookId', postRatingAndReview);
 
 // POST: Add review
 router.post('/review/:bookId', postReview);
