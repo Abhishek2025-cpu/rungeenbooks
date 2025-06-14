@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const categoryRoutes = require('./Routes/categoryRoutes');
 const authRoutes = require('./Routes/authRoutes');//updated code new
 const bookRoutes = require('./Routes/bookRoutes');
+const bookAction = require("./Routes/bookActions");
 
 const path = require('path');
 const app = express();
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use(authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/books', bookRoutes);
+app.use('api/book',bookAction);
 app.use('/uploads', express.static('uploads'));
 
 // 404 handler
