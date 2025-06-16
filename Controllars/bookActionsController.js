@@ -132,36 +132,41 @@ exports.toggleLike = async (req, res) => {
 exports.getBooksByCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
-    const { userId } = req.query; // Pass userId in query string
+    const { userId } = req.query;
 
     const books = await Book.find({ category: categoryId }).lean();
 
-    const result = await Promise.all(books.map(async (book) => {
-      const [ratings, reviews, likes, userLike] = await Promise.all([
-        Rating.find({ bookId: book._id }),
-        Review.find({ bookId: book._id }).populate('userId', 'firstname lastname'),
-        Like.find({ bookId: book._id }), // all likes
-        userId ? Like.findOne({ bookId: book._id, userId }) : null // ✅ corrected field names
-      ]);
+    const result = await Promise.all(
+      books.map(async (book) => {
+        const bookObjectId = new mongoose.Types.ObjectId(book._id);
+        const userObjectId = userId ? new mongoose.Types.ObjectId(userId) : null;
 
-      const ratingValues = ratings.map(r => r.value);
-      const averageRating = ratingValues.length > 0
-        ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
-        : null;
+        const [ratings, reviews, likes, userLike] = await Promise.all([
+          Rating.find({ bookId: bookObjectId }),
+          Review.find({ bookId: bookObjectId }).populate('userId', 'firstname lastname'),
+          Like.find({ bookId: bookObjectId }),
+          userObjectId ? Like.findOne({ bookId: bookObjectId, userId: userObjectId }) : null
+        ]);
 
-      return {
-        ...book,
-        averageRating: averageRating ? parseFloat(averageRating) : 0,
-        ratingCount: ratings.length,
-        reviewCount: reviews.length,
-        likeCount: likes.length,
-        reviews,
-        like: !!userLike // ✅ now this will reflect actual like status
-      };
-    }));
+        const ratingValues = ratings.map((r) => r.value);
+        const averageRating =
+          ratingValues.length > 0
+            ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
+            : null;
+
+        return {
+          ...book,
+          averageRating: averageRating ? parseFloat(averageRating) : 0,
+          ratingCount: ratings.length,
+          reviewCount: reviews.length,
+          likeCount: likes.length,
+          reviews,
+          like: !!userLike
+        };
+      })
+    );
 
     res.json({ message: '✅ Books fetched successfully', books: result });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
