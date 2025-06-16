@@ -68,10 +68,7 @@ category: {
     otherImages: [String],
   },
   pdf: [String],
-  like: {
-    type: Boolean,
-    default: false,
-  },
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Book', bookSchema);
