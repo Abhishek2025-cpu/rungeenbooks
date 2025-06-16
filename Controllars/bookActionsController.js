@@ -128,7 +128,6 @@ exports.toggleLike = async (req, res) => {
   }
 };
 
-const mongoose = require('mongoose');
 
 exports.getBooksByCategory = async (req, res) => {
   try {
