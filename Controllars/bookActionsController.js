@@ -128,10 +128,12 @@ exports.toggleLike = async (req, res) => {
   }
 };
 
+const mongoose = require('mongoose');
+
 exports.getBooksByCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
-    const { userId } = req.query; // passed as ?userId=XYZ
+    const { userId } = req.query; // Pass userId in query string
 
     const books = await Book.find({ category: categoryId }).lean();
 
@@ -139,8 +141,8 @@ exports.getBooksByCategory = async (req, res) => {
       const [ratings, reviews, likes, userLike] = await Promise.all([
         Rating.find({ bookId: book._id }),
         Review.find({ bookId: book._id }).populate('userId', 'firstname lastname'),
-        Like.find({ bookId: book._id }),
-        userId ? Like.findOne({ bookId: book._id, userId }) : null
+        Like.find({ bookId: book._id }), // all likes
+        userId ? Like.findOne({ bookId: book._id, userId }) : null // ✅ corrected field names
       ]);
 
       const ratingValues = ratings.map(r => r.value);
@@ -155,7 +157,7 @@ exports.getBooksByCategory = async (req, res) => {
         reviewCount: reviews.length,
         likeCount: likes.length,
         reviews,
-        like: !!userLike // true if liked, false otherwise
+        like: !!userLike // ✅ now this will reflect actual like status
       };
     }));
 
@@ -166,6 +168,7 @@ exports.getBooksByCategory = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 };
+
 
 
 exports.getFavoriteBooks = async (req, res) => {
