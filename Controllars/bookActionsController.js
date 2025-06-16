@@ -136,39 +136,36 @@ exports.getBooksByCategory = async (req, res) => {
 
     const books = await Book.find({ category: categoryId }).lean();
 
-    const result = await Promise.all(
-      books.map(async (book) => {
-        const bookObjectId = new mongoose.Types.ObjectId(book._id);
-        const userObjectId = userId ? new mongoose.Types.ObjectId(userId) : null;
+    const result = await Promise.all(books.map(async (book) => {
+      const bookObjectId = new mongoose.Types.ObjectId(book._id);
+      const userObjectId = userId ? new mongoose.Types.ObjectId(userId) : null;
 
-        const [ratings, reviews, likes, userLike] = await Promise.all([
-          Rating.find({ book: bookObjectId }),
-          Review.find({ book: bookObjectId }).populate('user', 'firstname lastname'),
-          Like.find({ bookId: bookObjectId }),
-          userObjectId ? Like.findOne({ bookId: bookObjectId, userId: userObjectId }) : null
-        ]);
+      const [ratings, reviews, likes, userLike] = await Promise.all([
+        Rating.find({ book: bookObjectId }),
+        Review.find({ book: bookObjectId }).populate('user', 'firstname lastname'),
+        Like.find({ bookId: bookObjectId }),
+        userObjectId ? Like.findOne({ bookId: bookObjectId, userId: userObjectId }) : null
+      ]);
 
-        const ratingValues = ratings.map((r) => r.value);
-        const averageRating =
-          ratingValues.length > 0
-            ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
-            : null;
+      const ratingValues = ratings.map(r => r.value);
+      const averageRating = ratingValues.length > 0
+        ? (ratingValues.reduce((a, b) => a + b) / ratingValues.length).toFixed(1)
+        : null;
 
-        return {
-          ...book,
-          averageRating: averageRating ? parseFloat(averageRating) : 0,
-          ratingCount: ratings.length,
-          reviewCount: reviews.length,
-          likeCount: likes.length,
-          reviews,
-          like: !!userLike  // ✅ true if user has liked the book
-        };
-      })
-    );
+      return {
+        ...book,
+        averageRating: averageRating ? parseFloat(averageRating) : 0,
+        ratingCount: ratings.length,
+        reviewCount: reviews.length,
+        likeCount: likes.length,
+        reviews,
+        like: !!userLike   // ✅ true if user has liked the book
+      };
+    }));
 
     res.json({ message: '✅ Books fetched successfully', books: result });
   } catch (err) {
-    console.error(err);
+    console.error('Error in getBooksByCategory:', err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 };
