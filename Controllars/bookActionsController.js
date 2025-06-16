@@ -142,8 +142,8 @@ exports.getBooksByCategory = async (req, res) => {
         const userObjectId = userId ? new mongoose.Types.ObjectId(userId) : null;
 
         const [ratings, reviews, likes, userLike] = await Promise.all([
-          Rating.find({ bookId: bookObjectId }),
-          Review.find({ bookId: bookObjectId }).populate('userId', 'firstname lastname'),
+          Rating.find({ book: bookObjectId }),
+          Review.find({ book: bookObjectId }).populate('user', 'firstname lastname'),
           Like.find({ bookId: bookObjectId }),
           userObjectId ? Like.findOne({ bookId: bookObjectId, userId: userObjectId }) : null
         ]);
@@ -161,7 +161,7 @@ exports.getBooksByCategory = async (req, res) => {
           reviewCount: reviews.length,
           likeCount: likes.length,
           reviews,
-          like: !!userLike
+          like: !!userLike  // ✅ true if user has liked the book
         };
       })
     );
@@ -172,7 +172,6 @@ exports.getBooksByCategory = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 };
-
 
 
 exports.getFavoriteBooks = async (req, res) => {
