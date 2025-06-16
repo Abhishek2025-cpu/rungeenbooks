@@ -3,6 +3,7 @@ const Rating = require('../Models/Ratings');
 const Review = require('../Models/Review');
 const Like = require('../Models/Like');
 const User = require('../Models/User');
+const mongoose = require('mongoose');
 
 exports.postRatingAndReview = async (req, res) => {
   const { userId, rating, reviewDescription } = req.body;
