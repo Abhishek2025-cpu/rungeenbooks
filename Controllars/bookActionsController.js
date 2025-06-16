@@ -129,61 +129,76 @@ exports.toggleLike = async (req, res) => {
 };
 
 exports.getBooksByCategory = async (req, res) => {
-  const { categoryId } = req.params;
+  try {
+    const { categoryId } = req.params;
 
-  const books = await Book.find({ category: categoryId }).lean();
+    const books = await Book.find({ category: categoryId }).lean();
 
-  const result = await Promise.all(books.map(async (book) => {
-    const [ratings, reviews, likes] = await Promise.all([
-      Rating.find({ book: book._id }),
-      Review.find({ book: book._id }).populate('user', 'firstname lastname'),
-      Like.find({ book: book._id })
-    ]);
+    const result = await Promise.all(books.map(async (book) => {
+      const [ratings, reviews, likes] = await Promise.all([
+        Rating.find({ bookId: book._id }),
+        Review.find({ bookId: book._id }).populate('userId', 'firstname lastname'),
+        Like.find({ bookId: book._id })
+      ]);
 
-    const ratingValues = ratings.map(r => r.value);
-    const averageRating = ratingValues.length > 0
-      ? (ratingValues.reduce((a, b) => a + b) / ratingValues.length).toFixed(1)
-      : null;
+      const ratingValues = ratings.map(r => r.value);
+      const averageRating = ratingValues.length > 0
+        ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
+        : null;
 
-    return {
-      ...book,
-      averageRating: averageRating ? parseFloat(averageRating) : 0,
-      ratingCount: ratings.length,
-      reviewCount: reviews.length,
-      likeCount: likes.length,
-      reviews
-    };
-  }));
+      return {
+        ...book,
+        averageRating: averageRating ? parseFloat(averageRating) : 0,
+        ratingCount: ratings.length,
+        reviewCount: reviews.length,
+        likeCount: likes.length,
+        reviews,
+      };
+    }));
 
-  res.json({ message: '✅ Books fetched successfully', books: result });
+    res.json({ message: '✅ Books fetched successfully', books: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+  }
 };
+
 
 exports.getFavoriteBooks = async (req, res) => {
   try {
     const { userId } = req.params;
 
     const likedBooks = await Like.find({ userId }).select('bookId');
-    const bookIds = likedBooks.map((like) => like.bookId);
+    const bookIds = likedBooks.map(like => like.bookId);
 
-    const books = await Book.aggregate([
-      { $match: { _id: { $in: bookIds } } },
-      {
-        $lookup: {
-          from: 'likes',
-          localField: '_id',
-          foreignField: 'bookId',
-          as: 'likes',
-        }
-      },
-      {
-        $addFields: {
-          likeCount: { $size: '$likes' }
-        }
-      },
-      { $sort: { likeCount: -1 } }
-    ]);
+    const books = await Book.find({ _id: { $in: bookIds } }).lean();
 
-    res.json({ favoriteBooks: books });
+    const result = await Promise.all(books.map(async (book) => {
+      const [ratings, reviews, likes] = await Promise.all([
+        Rating.find({ bookId: book._id }),
+        Review.find({ bookId: book._id }).populate('userId', 'firstname lastname'),
+        Like.find({ bookId: book._id }),
+      ]);
+
+      const ratingValues = ratings.map(r => r.value);
+      const averageRating = ratingValues.length > 0
+        ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
+        : null;
+
+      return {
+        ...book,
+        averageRating: averageRating ? parseFloat(averageRating) : 0,
+        ratingCount: ratings.length,
+        reviewCount: reviews.length,
+        likeCount: likes.length,
+        reviews,
+      };
+    }));
+
+    // Sort by likeCount descending
+    result.sort((a, b) => b.likeCount - a.likeCount);
+
+    res.json({ message: '✅ Favorite books fetched successfully', favoriteBooks: result });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
