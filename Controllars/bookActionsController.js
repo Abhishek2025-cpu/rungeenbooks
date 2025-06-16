@@ -98,23 +98,33 @@ exports.postReview = async (req, res) => {
 };
 
 exports.toggleLike = async (req, res) => {
-  const { userId } = req.body;
-  const { bookId } = req.params;
+  try {
+    const { userId } = req.body;
+    const { bookId } = req.params;
 
-  const user = await User.findById(userId);
-  if (!user || !user.isVerified) {
-    return res.status(403).json({ message: '❌ Only verified users can like' });
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(400).json({ message: '❌ Invalid userId or bookId' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user || !user.isVerified) {
+      return res.status(403).json({ message: '❌ Only verified users can like books' });
+    }
+
+    const existing = await Like.findOne({ userId, bookId });
+
+    if (existing) {
+      await Like.deleteOne({ _id: existing._id });
+      return res.json({ message: '❌ Like removed' });
+    }
+
+    await Like.create({ userId, bookId });
+    res.json({ message: '❤️ Book liked' });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
-
-  const existing = await Like.findOne({ user: userId, book: bookId });
-
-  if (existing) {
-    await Like.deleteOne({ _id: existing._id });
-    return res.json({ message: '❌ Like removed' });
-  }
-
-  await Like.create({ user: userId, book: bookId });
-  res.json({ message: '❤️ Book liked' });
 };
 
 exports.getBooksByCategory = async (req, res) => {
@@ -145,6 +155,38 @@ exports.getBooksByCategory = async (req, res) => {
   }));
 
   res.json({ message: '✅ Books fetched successfully', books: result });
+};
+
+exports.getFavoriteBooks = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const likedBooks = await Like.find({ userId }).select('bookId');
+    const bookIds = likedBooks.map((like) => like.bookId);
+
+    const books = await Book.aggregate([
+      { $match: { _id: { $in: bookIds } } },
+      {
+        $lookup: {
+          from: 'likes',
+          localField: '_id',
+          foreignField: 'bookId',
+          as: 'likes',
+        }
+      },
+      {
+        $addFields: {
+          likeCount: { $size: '$likes' }
+        }
+      },
+      { $sort: { likeCount: -1 } }
+    ]);
+
+    res.json({ favoriteBooks: books });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+  }
 };
 
 

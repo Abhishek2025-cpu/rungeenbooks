@@ -5,7 +5,8 @@ const {
   postReview,
   toggleLike,
   getRatingsAndReviews,
-  getBooksByCategory
+  getBooksByCategory,
+  getFavoriteBooks
 } = require('../Controllars/bookActionsController');
 
 // POST: Add rating (1–5)
@@ -15,10 +16,10 @@ router.post('/rate/:bookId', postRatingAndReview);
 router.post('/review/:bookId', postReview);
 
 // PATCH: Toggle like/unlike
-router.patch('/like/:bookId', toggleLike);
+router.post('/like/:bookId',toggleLike);
+router.get('/users/:userId/favorites',getFavoriteBooks);
 // GET: Ratings and reviews for a book
 router.get('/review-rating/:bookId', getRatingsAndReviews);
-
 
 // GET: Books by category with full nested data
 router.get('/category/:categoryId', getBooksByCategory);
