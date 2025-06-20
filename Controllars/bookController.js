@@ -267,7 +267,7 @@ exports.addBook = async (req, res) => {
       authorName,
       authorPhoto,
       authorInfo,
-      pdf, // Accept direct URL(s)
+      pdf // Can be array of objects or single object
     } = req.body;
 
     const files = req.files;
@@ -294,29 +294,49 @@ exports.addBook = async (req, res) => {
       }
     }
 
-    // ✅ Use direct PDF URL(s) if provided
-    let pdfUrls = [];
+    // ✅ Handle PDFs (metadata or upload)
+    let pdfData = [];
+
+    // If pdf comes in request body with metadata
     if (pdf) {
-      if (Array.isArray(pdf)) {
-        pdfUrls = pdf;
-      } else if (typeof pdf === 'string') {
-        pdfUrls = [pdf];
+      let parsedPdf = [];
+
+      try {
+        parsedPdf = typeof pdf === 'string' ? JSON.parse(pdf) : pdf;
+      } catch (err) {
+        return res.status(400).json({ message: 'Invalid PDF format in body. Must be JSON array or object.' });
       }
+
+      if (!Array.isArray(parsedPdf)) parsedPdf = [parsedPdf];
+
+      pdfData = parsedPdf.map(p => ({
+        url: p.url,
+        price: Number(p.price) || 0,
+        previewPages: Number(p.previewPages) || 2,
+        subscriberId: ''
+      }));
     }
 
-    // ✅ Upload PDF files only if no direct URLs
-    if (pdfUrls.length === 0 && files?.pdf?.length > 0) {
+    // If PDFs are uploaded as files
+    if (pdfData.length === 0 && files?.pdf?.length > 0) {
       for (const file of files.pdf) {
         const result = await cloudinary.uploader.upload(file.path, {
           resource_type: 'raw',
           folder: 'books/pdfs',
         });
-        pdfUrls.push(result.secure_url);
+
+        pdfData.push({
+          url: result.secure_url,
+          price: 0,
+          previewPages: 2,
+          subscriberId: ''
+        });
+
         fs.unlinkSync(file.path);
       }
     }
 
-    // ✅ Save to DB
+    // ✅ Save Book
     const newBook = new Book({
       name: name?.trim(),
       category: category?.trim(),
@@ -326,13 +346,13 @@ exports.addBook = async (req, res) => {
         coverImage: coverImageUrl,
         otherImages,
       },
-      pdf: pdfUrls,
+      pdf: pdfData,
       authorDetails: {
         name: authorName?.trim(),
         photo: authorPhoto?.trim(),
         info: authorInfo?.trim(),
       },
-      like: false,
+      like: false
     });
 
     await newBook.save();
@@ -480,6 +500,26 @@ exports.updateBooksByCategory = async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating books by category:', error);
     res.status(500).json({ message: '❌ Failed to update books', error: error.message });
+  }
+};
+
+
+exports.updateSubscriberId = async (req, res) => {
+  const { bookId, pdfUrl, userId } = req.body;
+
+  try {
+    const book = await Book.findById(bookId);
+    if (!book) return res.status(404).json({ message: 'Book not found' });
+
+    const pdfItem = book.pdf.find(p => p.url === pdfUrl);
+    if (!pdfItem) return res.status(404).json({ message: 'PDF not found' });
+
+    pdfItem.subscriberId = userId;
+    await book.save();
+
+    res.status(200).json({ message: 'Subscriber added successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update subscriberId', error: err.message });
   }
 };
 

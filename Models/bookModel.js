@@ -67,7 +67,21 @@ category: {
     coverImage: String,
     otherImages: [String],
   },
-  pdf: [String],
+pdf: [
+  {
+    url: String,
+    price: Number,
+    previewPages: {
+      type: Number,
+      default: 2
+    },
+    subscriberId: {
+      type: String,
+      default: ''
+    }
+  }
+],
+
 
 }, { timestamps: true });
 
