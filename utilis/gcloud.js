@@ -3,7 +3,7 @@ const path = require('path');
 
 // Assumes GOOGLE_APPLICATION_CREDENTIALS env var is set or key is loaded via code
 const storage = new Storage();
-const bucketName = 'Bills'; // change to your actual GCS bucket
+const bucketName = 'bills'; // change to your actual GCS bucket
 
 exports.uploadBufferToGCS = async (buffer, filename, folder) => {
   const gcsFileName = `${folder}/${Date.now()}-${filename}`;
