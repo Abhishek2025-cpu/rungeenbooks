@@ -158,18 +158,13 @@
 
 
 
-const Book = require('../Models/bookModel');
-const Category = require('../Models/categoryModel');
-const Review = require('../Models/Review');
-const Like = require('../Models/Like');
-const fs = require('fs');
-const path = require('path');
+
 
 // Add Book (local upload - images only)
 
 
 
-const cloudinary = require('../config/cloudinary');
+
 
 
 // exports.addBook = async (req, res) => {
@@ -256,11 +251,16 @@ const cloudinary = require('../config/cloudinary');
 //   }
 // };
 
+const Book = require('../Models/bookModel');
+const Category = require('../Models/categoryModel');
+const Review = require('../Models/Review');
+const Like = require('../Models/Like');
+
+const path = require('path');
+const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
 
 const { uploadBufferToGCS } = require('../utilis/gcloud');
-const fs = require('fs');
-
-
 exports.addBook = async (req, res) => {
   try {
     const {
@@ -271,12 +271,12 @@ exports.addBook = async (req, res) => {
       authorName,
       authorPhoto,
       authorInfo,
-      pdf // Can be array of objects or single object
+      pdf, // optional metadata if not uploading file
     } = req.body;
 
     const files = req.files;
 
-    // ✅ Upload coverImage
+    // ✅ Upload coverImage to Cloudinary
     let coverImageUrl = '';
     if (files?.coverImage?.length > 0) {
       const result = await cloudinary.uploader.upload(files.coverImage[0].path, {
@@ -286,7 +286,7 @@ exports.addBook = async (req, res) => {
       fs.unlinkSync(files.coverImage[0].path);
     }
 
-    // ✅ Upload otherImages
+    // ✅ Upload otherImages to Cloudinary
     const otherImages = [];
     if (files?.otherImages?.length > 0) {
       for (const file of files.otherImages) {
@@ -298,11 +298,11 @@ exports.addBook = async (req, res) => {
       }
     }
 
-    // ✅ Handle PDFs (metadata or upload)
+    // ✅ Handle PDFs (from metadata or uploaded files)
     let pdfData = [];
 
-    // If pdf comes in request body with metadata
-    if (pdf) {
+    // If metadata was sent and no file uploads
+    if (pdf && (!files?.pdf || files.pdf.length === 0)) {
       let parsedPdf = [];
 
       try {
@@ -317,31 +317,28 @@ exports.addBook = async (req, res) => {
         url: p.url,
         price: Number(p.price) || 0,
         previewPages: Number(p.previewPages) || 2,
-        subscriberId: ''
+        subscriberId: '',
       }));
     }
 
-    // If PDFs are uploaded as files
- if (pdfData.length === 0 && files?.pdf?.length > 0) {
-  for (const file of files.pdf) {
-    const buffer = fs.readFileSync(file.path);
+    // ✅ Upload PDF files to GCS if provided
+    if (pdfData.length === 0 && files?.pdf?.length > 0) {
+      for (const file of files.pdf) {
+        const buffer = fs.readFileSync(file.path);
+        const publicUrl = await uploadBufferToGCS(buffer, file.originalname, 'bills/pdf');
 
-    // 👇 Upload to GCS under 'bills/pdf' folder
-    const publicUrl = await uploadBufferToGCS(buffer, file.originalname, 'bills/pdf');
+        pdfData.push({
+          url: publicUrl,
+          price: 0,
+          previewPages: 2,
+          subscriberId: '',
+        });
 
-    pdfData.push({
-      url: publicUrl,
-      price: 0,
-      previewPages: 2,
-      subscriberId: ''
-    });
+        fs.unlinkSync(file.path); // cleanup
+      }
+    }
 
-    fs.unlinkSync(file.path); // clean up temp file
-  }
-}
-
-
-    // ✅ Save Book
+    // ✅ Save book
     const newBook = new Book({
       name: name?.trim(),
       category: category?.trim(),
@@ -357,7 +354,7 @@ exports.addBook = async (req, res) => {
         photo: authorPhoto?.trim(),
         info: authorInfo?.trim(),
       },
-      like: false
+      like: false,
     });
 
     await newBook.save();
@@ -375,6 +372,7 @@ exports.addBook = async (req, res) => {
     });
   }
 };
+
 
 
 
