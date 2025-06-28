@@ -11,6 +11,8 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.0.1",
+    "@google-cloud/storage": "^7.16.0",
     "@supabase/supabase-js": "^2.50.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",

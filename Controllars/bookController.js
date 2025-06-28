@@ -257,6 +257,10 @@ const cloudinary = require('../config/cloudinary');
 // };
 
 
+const { uploadBufferToGCS } = require('../utilis/gcloud');
+const fs = require('fs');
+
+
 exports.addBook = async (req, res) => {
   try {
     const {
@@ -318,23 +322,24 @@ exports.addBook = async (req, res) => {
     }
 
     // If PDFs are uploaded as files
-    if (pdfData.length === 0 && files?.pdf?.length > 0) {
-      for (const file of files.pdf) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          resource_type: 'raw',
-          folder: 'books/pdfs',
-        });
+ if (pdfData.length === 0 && files?.pdf?.length > 0) {
+  for (const file of files.pdf) {
+    const buffer = fs.readFileSync(file.path);
 
-        pdfData.push({
-          url: result.secure_url,
-          price: 0,
-          previewPages: 2,
-          subscriberId: ''
-        });
+    // 👇 Upload to GCS under 'bills/pdf' folder
+    const publicUrl = await uploadBufferToGCS(buffer, file.originalname, 'bills/pdf');
 
-        fs.unlinkSync(file.path);
-      }
-    }
+    pdfData.push({
+      url: publicUrl,
+      price: 0,
+      previewPages: 2,
+      subscriberId: ''
+    });
+
+    fs.unlinkSync(file.path); // clean up temp file
+  }
+}
+
 
     // ✅ Save Book
     const newBook = new Book({
