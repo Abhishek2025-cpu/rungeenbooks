@@ -260,7 +260,7 @@ const path = require('path');
 const fs = require('fs');
 const cloudinary = require('cloudinary').v2;
 
-const { uploadBufferToGCS } = require('../utilis/gcloud');
+
 exports.addBook = async (req, res) => {
   try {
     const {
@@ -325,7 +325,7 @@ exports.addBook = async (req, res) => {
     if (pdfData.length === 0 && files?.pdf?.length > 0) {
       for (const file of files.pdf) {
         const buffer = fs.readFileSync(file.path);
-        const publicUrl = await uploadBufferToGCS(buffer, file.originalname, 'bills/pdf');
+   
 
         pdfData.push({
           url: publicUrl,
