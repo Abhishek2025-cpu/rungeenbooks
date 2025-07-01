@@ -12,18 +12,9 @@ const bookAction = require("./Routes/bookActions");
 const app = express();
 
 // ✅ Allow CORS for localhost ports 5173 and 5174
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
