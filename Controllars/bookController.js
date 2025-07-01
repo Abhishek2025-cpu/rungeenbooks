@@ -302,41 +302,29 @@ exports.addBook = async (req, res) => {
     let pdfData = [];
 
     // If metadata was sent and no file uploads
-    if (pdf && (!files?.pdf || files.pdf.length === 0)) {
-      let parsedPdf = [];
+  // ✅ Handle PDF files from upload
+if (pdfData.length === 0 && files?.pdf?.length > 0) {
+  for (const file of files.pdf) {
+    // ✅ UPLOAD THE PDF TO CLOUDINARY
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder: 'books/pdfs', // It's good practice to use a different folder
+      resource_type: 'raw' // Tell Cloudinary this is a raw file, not an image/video
+    });
 
-      try {
-        parsedPdf = typeof pdf === 'string' ? JSON.parse(pdf) : pdf;
-      } catch (err) {
-        return res.status(400).json({ message: 'Invalid PDF format in body. Must be JSON array or object.' });
-      }
+    // ✅ NOW 'publicUrl' is defined with the URL from Cloudinary
+    const publicUrl = result.secure_url;
 
-      if (!Array.isArray(parsedPdf)) parsedPdf = [parsedPdf];
+    pdfData.push({
+      url: publicUrl, // Now this works!
+      price: 0, // You can get this from req.body if needed
+      previewPages: 2,
+      subscriberId: '',
+    });
 
-      pdfData = parsedPdf.map(p => ({
-        url: p.url,
-        price: Number(p.price) || 0,
-        previewPages: Number(p.previewPages) || 2,
-        subscriberId: '',
-      }));
-    }
-
-    // ✅ Upload PDF files to GCS if provided
-    if (pdfData.length === 0 && files?.pdf?.length > 0) {
-      for (const file of files.pdf) {
-        const buffer = fs.readFileSync(file.path);
-   
-
-        pdfData.push({
-          url: publicUrl,
-          price: 0,
-          previewPages: 2,
-          subscriberId: '',
-        });
-
-        fs.unlinkSync(file.path); // cleanup
-      }
-    }
+    // ✅ Clean up the temporary file from your server
+    fs.unlinkSync(file.path);
+  }
+}
 
     // ✅ Save book
     const newBook = new Book({
