@@ -252,14 +252,8 @@
 // };
 
 const Book = require('../Models/bookModel');
-const Category = require('../Models/categoryModel');
-const Review = require('../Models/Review');
-const Like = require('../Models/Like');
-
-const path = require('path');
-const fs = require('fs');
+const fs = require('fs/promises'); // Using the promise-based version of fs
 const cloudinary = require('cloudinary').v2;
-
 
 exports.addBook = async (req, res) => {
   try {
@@ -271,70 +265,96 @@ exports.addBook = async (req, res) => {
       authorName,
       authorPhoto,
       authorInfo,
-      pdf, // optional metadata if not uploading file
+      pdf, // This can now be a JSON string of metadata
     } = req.body;
 
     const files = req.files;
 
-    // ✅ Upload coverImage to Cloudinary
-    let coverImageUrl = '';
-    if (files?.coverImage?.length > 0) {
-      const result = await cloudinary.uploader.upload(files.coverImage[0].path, {
+    // --- 1. Handle File Uploads Concurrently for Efficiency ---
+
+    // Upload cover image
+    let coverImagePromise = null;
+    if (files?.coverImage?.[0]) {
+      coverImagePromise = cloudinary.uploader.upload(files.coverImage[0].path, {
         folder: 'books/images',
       });
-      coverImageUrl = result.secure_url;
-      fs.unlinkSync(files.coverImage[0].path);
     }
 
-    // ✅ Upload otherImages to Cloudinary
-    const otherImages = [];
+    // Upload other images in parallel
+    let otherImagesPromises = [];
     if (files?.otherImages?.length > 0) {
-      for (const file of files.otherImages) {
-        const result = await cloudinary.uploader.upload(file.path, {
+      otherImagesPromises = files.otherImages.map(file =>
+        cloudinary.uploader.upload(file.path, {
           folder: 'books/images',
-        });
-        otherImages.push(result.secure_url);
-        fs.unlinkSync(file.path);
+        })
+      );
+    }
+
+    // Await all image uploads at the same time
+    const [coverImageResult, ...otherImagesResults] = await Promise.all([
+      coverImagePromise,
+      ...otherImagesPromises,
+    ]);
+
+    const coverImageUrl = coverImageResult ? coverImageResult.secure_url : '';
+    const otherImagesUrls = otherImagesResults.map(result => result.secure_url);
+
+
+    // --- 2. Handle PDF Data (from uploaded file OR from body metadata) ---
+
+    let pdfData = [];
+
+    // Scenario A: PDF file was uploaded
+    if (files?.pdf?.length > 0) {
+      const pdfFile = files.pdf[0];
+      const result = await cloudinary.uploader.upload(pdfFile.path, {
+        folder: 'books/pdfs',
+        resource_type: 'raw', // Important for non-image files
+      });
+
+      pdfData.push({
+        url: result.secure_url,
+        price: req.body.price || 0, // Get price from body or default to 0
+        previewPages: req.body.previewPages || 2,
+        subscriberId: '',
+      });
+
+    // Scenario B: PDF metadata was sent in the body (as a JSON string)
+    } else if (pdf) {
+      try {
+        // Form data sends complex objects as strings, so we parse it
+        const parsedPdf = JSON.parse(pdf);
+        if (Array.isArray(parsedPdf)) {
+          pdfData = parsedPdf;
+        } else {
+          pdfData = [parsedPdf];
+        }
+      } catch (parseError) {
+        // If JSON is malformed, send a specific error back
+        return res.status(400).json({ message: 'Invalid format for PDF metadata.' });
       }
     }
 
-    // ✅ Handle PDFs (from metadata or uploaded files)
-    let pdfData = [];
 
-    // If metadata was sent and no file uploads
-  // ✅ Handle PDF files from upload
-if (pdfData.length === 0 && files?.pdf?.length > 0) {
-  for (const file of files.pdf) {
-    // ✅ UPLOAD THE PDF TO CLOUDINARY
-    const result = await cloudinary.uploader.upload(file.path, {
-      folder: 'books/pdfs', // It's good practice to use a different folder
-      resource_type: 'raw' // Tell Cloudinary this is a raw file, not an image/video
-    });
+    // --- 3. Clean up all local files after processing ---
+    if (files) {
+      const allFiles = Object.values(files).flat(); // Get all uploaded file objects
+      for (const file of allFiles) {
+        await fs.unlink(file.path); // Use async unlink
+      }
+    }
 
-    // ✅ NOW 'publicUrl' is defined with the URL from Cloudinary
-    const publicUrl = result.secure_url;
 
-    pdfData.push({
-      url: publicUrl, // Now this works!
-      price: 0, // You can get this from req.body if needed
-      previewPages: 2,
-      subscriberId: '',
-    });
-
-    // ✅ Clean up the temporary file from your server
-    fs.unlinkSync(file.path);
-  }
-}
-
-    // ✅ Save book
+    // --- 4. Create and Save the New Book ---
     const newBook = new Book({
       name: name?.trim(),
       category: category?.trim(),
-      about: Array.isArray(about) ? about : [about],
+      // Ensure 'about' is always an array, even if it's empty
+      about: about ? (Array.isArray(about) ? about : [about]) : [],
       language: language?.trim(),
       images: {
         coverImage: coverImageUrl,
-        otherImages,
+        otherImages: otherImagesUrls,
       },
       pdf: pdfData,
       authorDetails: {
@@ -342,25 +362,36 @@ if (pdfData.length === 0 && files?.pdf?.length > 0) {
         photo: authorPhoto?.trim(),
         info: authorInfo?.trim(),
       },
-      like: false,
     });
 
     await newBook.save();
 
     res.status(201).json({
-      message: '✅ Book added successfully',
+      message: '✅ Book added successfully!',
       book: newBook,
     });
 
   } catch (error) {
     console.error('❌ Error adding book:', error);
+
+    // Clean up files even if an error occurs mid-process
+    if (req.files) {
+      const allFiles = Object.values(req.files).flat();
+      for (const file of allFiles) {
+        try {
+          await fs.unlink(file.path);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup file:', file.path, cleanupError);
+        }
+      }
+    }
+
     res.status(500).json({
       message: '❌ Failed to add book',
       error: error.message,
     });
   }
 };
-
 
 
 
