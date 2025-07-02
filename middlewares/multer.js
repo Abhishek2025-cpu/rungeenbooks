@@ -1,39 +1,36 @@
+// middlewares/multer.js
+
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
-// Create uploads folder if it doesn't exist
-const uploadPath = 'uploads/';
-if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath);
-}
-
-// Storage configuration
+// Configure storage (saving to disk temporarily)
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadPath);
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Make sure you have an 'uploads' directory
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
 });
 
-// File filter for images and pdf
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|pdf/;
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (allowedTypes.test(ext)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image or PDF files are allowed'), false);
-  }
+// Configure file size limits
+const limits = {
+  fileSize: 10 * 1024 * 1024, // 10 MB limit per file
+  fieldSize: 10 * 1024 * 1024, // 10 MB limit for non-file fields
 };
 
-// Export field-based uploader for coverImage, otherImages, and pdf
-const upload = multer({ storage, fileFilter }).fields([
+// The main upload middleware using multer.fields
+const upload = multer({
+  storage: storage,
+  limits: limits, // Apply the limits
+  fileFilter: (req, file, cb) => {
+    // You can add file type validation here if needed
+    cb(null, true);
+  },
+}).fields([
   { name: 'coverImage', maxCount: 1 },
   { name: 'otherImages', maxCount: 5 },
-  { name: 'pdf', maxCount: 3 },
+  { name: 'pdf', maxCount: 1 },
 ]);
 
 module.exports = upload;

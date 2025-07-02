@@ -251,8 +251,10 @@
 //   }
 // };
 
+// Controllars/bookController.js
+
 const Book = require('../Models/bookModel');
-const fs = require('fs/promises'); // Using the promise-based version of fs
+const fs = require('fs/promises');
 const cloudinary = require('cloudinary').v2;
 
 exports.addBook = async (req, res) => {
@@ -262,17 +264,18 @@ exports.addBook = async (req, res) => {
       category,
       about,
       language,
+      // Destructure all expected author fields
       authorName,
       authorPhoto,
       authorInfo,
-      pdf, // This can now be a JSON string of metadata
+      // Also get the old 'author' field as a fallback
+      author,
+      pdf,
     } = req.body;
 
     const files = req.files;
 
-    // --- 1. Handle File Uploads Concurrently for Efficiency ---
-
-    // Upload cover image
+    // --- 1. Handle File Uploads Concurrently ---
     let coverImagePromise = null;
     if (files?.coverImage?.[0]) {
       coverImagePromise = cloudinary.uploader.upload(files.coverImage[0].path, {
@@ -280,17 +283,13 @@ exports.addBook = async (req, res) => {
       });
     }
 
-    // Upload other images in parallel
     let otherImagesPromises = [];
     if (files?.otherImages?.length > 0) {
       otherImagesPromises = files.otherImages.map(file =>
-        cloudinary.uploader.upload(file.path, {
-          folder: 'books/images',
-        })
+        cloudinary.uploader.upload(file.path, { folder: 'books/images' })
       );
     }
 
-    // Await all image uploads at the same time
     const [coverImageResult, ...otherImagesResults] = await Promise.all([
       coverImagePromise,
       ...otherImagesPromises,
@@ -299,57 +298,33 @@ exports.addBook = async (req, res) => {
     const coverImageUrl = coverImageResult ? coverImageResult.secure_url : '';
     const otherImagesUrls = otherImagesResults.map(result => result.secure_url);
 
-
-    // --- 2. Handle PDF Data (from uploaded file OR from body metadata) ---
-
+    // --- 2. Handle PDF Data ---
     let pdfData = [];
-
-    // Scenario A: PDF file was uploaded
     if (files?.pdf?.length > 0) {
-      const pdfFile = files.pdf[0];
-      const result = await cloudinary.uploader.upload(pdfFile.path, {
+      const result = await cloudinary.uploader.upload(files.pdf[0].path, {
         folder: 'books/pdfs',
-        resource_type: 'raw', // Important for non-image files
+        resource_type: 'raw',
       });
-
       pdfData.push({
         url: result.secure_url,
-        price: req.body.price || 0, // Get price from body or default to 0
+        price: req.body.price || 0,
         previewPages: req.body.previewPages || 2,
         subscriberId: '',
       });
-
-    // Scenario B: PDF metadata was sent in the body (as a JSON string)
-    } else if (pdf) {
-      try {
-        // Form data sends complex objects as strings, so we parse it
-        const parsedPdf = JSON.parse(pdf);
-        if (Array.isArray(parsedPdf)) {
-          pdfData = parsedPdf;
-        } else {
-          pdfData = [parsedPdf];
-        }
-      } catch (parseError) {
-        // If JSON is malformed, send a specific error back
-        return res.status(400).json({ message: 'Invalid format for PDF metadata.' });
-      }
     }
 
-
-    // --- 3. Clean up all local files after processing ---
+    // --- 3. Clean up all local files ---
     if (files) {
-      const allFiles = Object.values(files).flat(); // Get all uploaded file objects
+      const allFiles = Object.values(files).flat();
       for (const file of allFiles) {
-        await fs.unlink(file.path); // Use async unlink
+        await fs.unlink(file.path);
       }
     }
-
 
     // --- 4. Create and Save the New Book ---
     const newBook = new Book({
       name: name?.trim(),
       category: category?.trim(),
-      // Ensure 'about' is always an array, even if it's empty
       about: about ? (Array.isArray(about) ? about : [about]) : [],
       language: language?.trim(),
       images: {
@@ -358,7 +333,8 @@ exports.addBook = async (req, res) => {
       },
       pdf: pdfData,
       authorDetails: {
-        name: authorName?.trim(),
+        // Use authorName if present, otherwise fall back to the old 'author' field
+        name: authorName?.trim() || author?.trim(),
         photo: authorPhoto?.trim(),
         info: authorInfo?.trim(),
       },
@@ -374,7 +350,7 @@ exports.addBook = async (req, res) => {
   } catch (error) {
     console.error('❌ Error adding book:', error);
 
-    // Clean up files even if an error occurs mid-process
+    // Attempt to clean up files even if an error occurs
     if (req.files) {
       const allFiles = Object.values(req.files).flat();
       for (const file of allFiles) {
@@ -384,6 +360,13 @@ exports.addBook = async (req, res) => {
           console.error('Failed to cleanup file:', file.path, cleanupError);
         }
       }
+    }
+    
+    // Provide a more specific error message if it's a Multer error
+    if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+            message: `❌ File is too large. Maximum size is 10 MB.`,
+        });
     }
 
     res.status(500).json({
