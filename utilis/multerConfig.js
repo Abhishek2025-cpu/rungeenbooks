@@ -1,8 +1,7 @@
 const multer = require('multer');
 const path = require('path');
-
-// Create uploads folder if not exists
 const fs = require('fs');
+
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
@@ -15,3 +14,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+// ✅ EXPORT IT
+module.exports = upload;
