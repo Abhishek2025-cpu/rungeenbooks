@@ -4,19 +4,18 @@ const path = require('path');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // ensure uploads/ exists
+    cb(null, 'uploads/'); // make sure this folder exists
   },
   filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'));
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
   }
 });
 
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') cb(null, true);
-  else cb(new Error('Only PDFs are allowed'), false);
-};
+const upload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
+});
 
-const upload = multer({ storage, fileFilter });
 
 module.exports = upload;
