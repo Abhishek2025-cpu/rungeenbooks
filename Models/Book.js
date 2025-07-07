@@ -1,4 +1,4 @@
-
+// models/Book.js
 const mongoose = require('mongoose');
 
 const bookSchema = new mongoose.Schema({
@@ -11,4 +11,4 @@ const bookSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Book', bookSchema);
+module.exports = mongoose.models.Book || mongoose.model('Book', bookSchema);

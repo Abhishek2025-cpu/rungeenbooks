@@ -27,7 +27,6 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/book', bookAction);
 app.use('/api/books', bookRoute);
-
 // 404 handler
 app.use((req, res, next) => {
   res.status(404).json({ error: 'Not Found' });
