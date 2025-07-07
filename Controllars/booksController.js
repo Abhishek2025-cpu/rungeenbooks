@@ -3,14 +3,15 @@ const Book = require('../Models/Book');
 
 const addBook = async (req, res) => {
   try {
-    const { name, about, category_id, price } = req.body;
+     console.log('req.body:', req.body);
+    const { name, about, category, price } = req.body;
 
     if (!req.file) return res.status(400).json({ error: 'PDF file is required' });
 
     const newBook = new Book({
       name,
       about,
-      category_id,
+      category,
       price,
       pdfUrl: req.file.path,
       subscribeId: null,
