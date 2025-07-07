@@ -19,10 +19,10 @@ const addBook = async (req, res) => {
 
     await newBook.save();
     res.status(201).json({ message: 'Book added successfully', book: newBook });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Something went wrong' });
-  }
+  }  catch (error) {
+  console.error('Error:', error); // Log the actual error
+  res.status(500).json({ error: 'Something went wrong', details: error.message });
+}
 };
 
 module.exports = { addBook };
