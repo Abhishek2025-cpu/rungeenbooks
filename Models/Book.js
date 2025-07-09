@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const bookSchema = new mongoose.Schema({
   name: { type: String, required: true },
   about: { type: String, required: true },
-  category_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+ category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+
   pdfUrl: { type: String, required: true },
   price: { type: Number, required: true },
   subscribeId: { type: String, default: null },
