@@ -1,63 +1,49 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // ✅ Add this
+const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
+const app = express(); // ✅ Define app early
+
+// Routes
 const categoryRoutes = require('./Routes/categoryRoutes');
 const authRoutes = require('./Routes/authRoutes');
-const payment = require('./Routes/paymentRoutes');
+const paymentRoutes = require('./Routes/paymentRoutes');
+const bookRoutes = require('./Routes/books');
+const orderRoutes = require('./Routes/order'); // ✅ Make sure file path is correct
 
-const bookRoute = require('./Routes/books');
-app.use('/api', require('./routes/order'));
-
-const app = express();
-
-// ✅ Allow CORS for localhost ports 5173 and 5174
-app.use(cors({
-  origin: '*', // Allow all origins
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-}));
-
-const uploadsDir = './uploads';
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
-
+// Middlewares
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
+const uploadsDir = './uploads';
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
-app.use(express.json());
+// Use routes
 app.use(authRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/payment',payment);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/books', bookRoutes);
+app.use('/api', orderRoutes); // ✅ Now it’s in the right place
 
-app.use('/api/books', bookRoute);
-// 404 handler
-app.use((req, res, next) => {
-  res.status(404).json({ error: 'Not Found' });
-});
-
-// Global error handler
+// 404 and error handlers
+app.use((req, res, next) => res.status(404).json({ error: 'Not Found' }));
 app.use((err, req, res, next) => {
   console.error('🔥 Global Error:', err.stack || err);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: err.message || 'Unexpected error',
-  });
+  res.status(500).json({ error: 'Internal Server Error', message: err.message || 'Unexpected error' });
 });
 
-// MongoDB Connection and Server Start
+// MongoDB and Server Start
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
-  console.log('MongoDB connected');
+  console.log('✅ MongoDB connected');
   app.listen(process.env.PORT, () => {
-    console.log(`Server is running on port ${process.env.PORT}`);
+    console.log(`🚀 Server is running on port ${process.env.PORT}`);
   });
-}).catch(err => console.error(err));
+}).catch(err => console.error('MongoDB connection error:', err));
