@@ -25,6 +25,8 @@ console.log("BODY:", req.body);
       category,
       price,
       pdfUrl: `/uploads/${pdfFile.filename}`,
+      //pdfFilename: pdfFile.filename,
+
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
       images: {
         otherImages: otherImages.map(img => `/uploads/${img.filename}`)

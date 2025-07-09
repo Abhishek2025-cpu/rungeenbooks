@@ -7,6 +7,7 @@ const fs = require('fs');
 
 const categoryRoutes = require('./Routes/categoryRoutes');
 const authRoutes = require('./Routes/authRoutes');
+const payment = require('./Routes/paymentRoutes');
 
 const bookRoute = require('./Routes/books');
 
@@ -32,6 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
 app.use(authRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/payment',payment);
 
 app.use('/api/books', bookRoute);
 // 404 handler
