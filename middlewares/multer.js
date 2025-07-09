@@ -6,16 +6,12 @@ const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const storage = multer.diskStorage({
- destination: function (req, file, cb) {
-  const uploadDir = path.resolve(__dirname, '../uploads');
-  console.log('UPLOAD DIR:', uploadDir); // ✅ LOG THIS
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+  destination: './uploads',
+  filename: function (req, file, cb) {
+    cb(null, file.originalname); // ✅ use original filename
   }
-  cb(null, uploadDir);
-}
-
 });
+
 
 const upload = multer({
   storage: storage,
