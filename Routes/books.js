@@ -2,8 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const { addBook } = require('../Controllars/booksController');
-const upload = require('../utilis/multerConfig');
+const upload = require('../middlewares/multer');
+router.post('/add-book', upload, addBook);
 
-router.post('/add-book', upload.single('pdf'), addBook);
 
 module.exports = router;
