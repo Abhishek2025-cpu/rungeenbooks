@@ -8,7 +8,7 @@ const razorpay = new Razorpay({
   key_secret: 'pb0jXk8ovEuFQggCfvoey9Am'
 });
 
-router.post('/api/create-order', async (req, res) => {
+router.post('/create-order', async (req, res) => {
   const { amount, currency = 'INR', receipt } = req.body;
 
   try {

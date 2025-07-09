@@ -10,6 +10,7 @@ const authRoutes = require('./Routes/authRoutes');
 const payment = require('./Routes/paymentRoutes');
 
 const bookRoute = require('./Routes/books');
+app.use('/api', require('./routes/order'));
 
 const app = express();
 
