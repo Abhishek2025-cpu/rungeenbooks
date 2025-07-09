@@ -6,18 +6,26 @@ const addBook = async (req, res) => {
     const { name, about, category, price } = req.body;
 
     // Access PDF file correctly when using upload.fields
-    const pdfFile = req.files?.pdf?.[0];
+
     if (!pdfFile) {
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
-    const newBook = new Book({
-      name,
-      about,
-      category,
-      price,
-      pdfUrl: pdfFile.path, // ✅ Store uploaded path
-    });
+  const pdfFile = req.files?.pdf?.[0];
+const coverImage = req.files?.coverImage?.[0];
+const otherImages = req.files?.otherImages || [];
+
+const newBook = new Book({
+  name: req.body.name,
+  about: req.body.about,
+  category: req.body.category,
+  price: req.body.price,
+  pdfUrl: pdfFile ? `/uploads/${pdfFile.filename}` : undefined,
+  coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
+  images: {
+    otherImages: otherImages.map(f => `/uploads/${f.filename}`)
+  }
+});
 
     await newBook.save();
 
