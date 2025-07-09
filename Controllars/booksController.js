@@ -2,8 +2,11 @@
 const Book = require('../Models/Book');
 
 const addBook = async (req, res) => {
+  
+
   try {
     const { name, about, category, price } = req.body;
+      const pdfFile = req.files?.pdf?.[0];
 
     // Access PDF file correctly when using upload.fields
 
@@ -11,7 +14,7 @@ const addBook = async (req, res) => {
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
-  const pdfFile = req.files?.pdf?.[0];
+
 const coverImage = req.files?.coverImage?.[0];
 const otherImages = req.files?.otherImages || [];
 
