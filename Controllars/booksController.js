@@ -5,28 +5,30 @@ const addBook = async (req, res) => {
   try {
     const { name, about, category, price } = req.body;
 
-    // Validate file presence
-    if (!req.file) {
+    // Access PDF file correctly when using upload.fields
+    const pdfFile = req.files?.pdf?.[0];
+    if (!pdfFile) {
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
-    // Create new Book
     const newBook = new Book({
       name,
       about,
       category,
       price,
-      pdfUrl: req.file.path, // ✅ store path of uploaded PDF
+      pdfUrl: pdfFile.path, // ✅ Store uploaded path
     });
 
-    // Save to DB
     await newBook.save();
 
-    // Respond with saved book
-    return res.status(201).json({
-      message: 'Book added successfully',
-      book: newBook
-    });
+   return res.status(201).json({
+  message: 'Book added successfully',
+  book: {
+    ...newBook.toObject(),
+    pdf: newBook.pdfUrl, // ✅ override for response
+  }
+});
+
 
   } catch (err) {
     console.error('Add Book Error:', err);
@@ -36,5 +38,6 @@ const addBook = async (req, res) => {
     });
   }
 };
+
 
 module.exports = { addBook };
