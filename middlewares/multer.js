@@ -1,36 +1,29 @@
-// middlewares/multer.js
-
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// Configure storage (saving to disk temporarily)
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Make sure you have an 'uploads' directory
-  },
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const uniqueSuffix = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueSuffix);
   },
 });
 
-// Configure file size limits
-const limits = {
-  fileSize: 10 * 1024 * 1024, // 10 MB limit per file
-  fieldSize: 10 * 1024 * 1024, // 10 MB limit for non-file fields
-};
-
-// The main upload middleware using multer.fields
 const upload = multer({
-  storage: storage,
-  limits: limits, // Apply the limits
-  fileFilter: (req, file, cb) => {
-    // You can add file type validation here if needed
-    cb(null, true);
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+    fieldSize: 10 * 1024 * 1024,
   },
 }).fields([
   { name: 'coverImage', maxCount: 1 },
   { name: 'otherImages', maxCount: 5 },
-  { name: 'pdf', maxCount: 1 },
+  { name: 'pdf', maxCount: 1 }
 ]);
 
 module.exports = upload;

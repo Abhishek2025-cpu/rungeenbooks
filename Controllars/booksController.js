@@ -1,46 +1,46 @@
 // controllers/bookController.js
 const Book = require('../Models/Book');
 
-const addBook = async (req, res) => {
-  
 
+const path = require('path');
+
+const addBook = async (req, res) => {
   try {
     const { name, about, category, price } = req.body;
-      const pdfFile = req.files?.pdf?.[0];
 
-    // Access PDF file correctly when using upload.fields
+    const pdfFile = req.files?.pdf?.[0];
+    const coverImage = req.files?.coverImage?.[0];
+    const otherImages = req.files?.otherImages || [];
 
     if (!pdfFile) {
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
+    if (!name || !about || !category || !price) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
 
-const coverImage = req.files?.coverImage?.[0];
-const otherImages = req.files?.otherImages || [];
-
-const newBook = new Book({
-  name: req.body.name,
-  about: req.body.about,
-  category: req.body.category,
-  price: req.body.price,
-  pdfUrl: pdfFile ? `/uploads/${pdfFile.filename}` : undefined,
-  coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
-  images: {
-    otherImages: otherImages.map(f => `/uploads/${f.filename}`)
-  }
-});
+    const newBook = new Book({
+      name,
+      about,
+      category,
+      price,
+      pdfUrl: `/uploads/${pdfFile.filename}`,
+      coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
+      images: {
+        otherImages: otherImages.map(img => `/uploads/${img.filename}`)
+      }
+    });
 
     await newBook.save();
 
-   return res.status(201).json({
-  message: 'Book added successfully',
-  book: {
-    ...newBook.toObject(),
-    pdf: newBook.pdfUrl, // ✅ override for response
-  }
-});
-
-
+    return res.status(201).json({
+      message: 'Book added successfully',
+      book: {
+        ...newBook.toObject(),
+        pdf: newBook.pdfUrl // for frontend compatibility
+      }
+    });
   } catch (err) {
     console.error('Add Book Error:', err);
     return res.status(500).json({
@@ -49,6 +49,5 @@ const newBook = new Book({
     });
   }
 };
-
 
 module.exports = { addBook };
