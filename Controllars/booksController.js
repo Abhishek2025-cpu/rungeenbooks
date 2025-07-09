@@ -10,15 +10,16 @@ const addBook = async (req, res) => {
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
-    const newBook = new Book({
-      name,
-      about: Array.isArray(about) ? about[0] : about,
-      category,
-      price,
-      pdf: [req.file.path], // ✅ store as array
-      subscribeId: null,
-      userId: null,
-    });
+  const newBook = new Book({
+  name,
+  about,
+  category_id: category, // match schema
+  price,
+  pdfUrl: req.file.path,  // ✅ fixed
+  subscribeId: null,
+  userId: null
+});
+
 
     await newBook.save();
     res.status(201).json({ message: 'Book added successfully', book: newBook });
