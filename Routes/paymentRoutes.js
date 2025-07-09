@@ -2,7 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { verifyPayment } = require('../controllers/paymentController');
+const { verifyPayment } = require('../Controllars/paymentController');
 
 router.post('/verify', verifyPayment);
 
