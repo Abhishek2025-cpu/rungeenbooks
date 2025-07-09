@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/multer'); // fields-based upload
-const { addBook } = require('../controllers/bookController');
+const { addBook } = require('../Controllars/booksController');
 
 router.post('/add-book', upload, addBook);
 
