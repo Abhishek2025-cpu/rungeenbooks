@@ -8,7 +8,6 @@ const fs = require('fs');
 const categoryRoutes = require('./Routes/categoryRoutes');
 const authRoutes = require('./Routes/authRoutes');
 
-const bookAction = require("./Routes/bookActions");
 const bookRoute = require('./Routes/books');
 
 const app = express();
@@ -33,7 +32,6 @@ app.use(express.json());
 app.use(authRoutes);
 app.use('/api/categories', categoryRoutes);
 
-app.use('/api/book', bookAction);
 app.use('/api/books', bookRoute);
 // 404 handler
 app.use((req, res, next) => {
