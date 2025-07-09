@@ -5,6 +5,9 @@ const path = require('path');
 const Book = require('../Models/Book');
 
 const addBook = async (req, res) => {
+  console.log("FILES:", req.files);
+console.log("BODY:", req.body);
+
   try {
     const { name, about, category, price } = req.body;
 
