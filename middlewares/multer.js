@@ -6,11 +6,13 @@ const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
- filename: (req, file, cb) => {
-  const uniqueSuffix = Date.now() + '-' + file.originalname;
-  console.log("Writing file to:", path.join(uploadDir, uniqueSuffix));
-  cb(null, uniqueSuffix);
+ destination: function (req, file, cb) {
+  const uploadDir = path.resolve(__dirname, '../uploads');
+  console.log('UPLOAD DIR:', uploadDir); // ✅ LOG THIS
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+  }
+  cb(null, uploadDir);
 }
 
 });
