@@ -1,8 +1,8 @@
-// controllers/bookController.js
-const Book = require('../Models/Book');
+
 
 
 const path = require('path');
+const Book = require('../Models/Book');
 
 const addBook = async (req, res) => {
   try {
@@ -14,10 +14,6 @@ const addBook = async (req, res) => {
 
     if (!pdfFile) {
       return res.status(400).json({ error: 'PDF file is required' });
-    }
-
-    if (!name || !about || !category || !price) {
-      return res.status(400).json({ error: 'All fields are required' });
     }
 
     const newBook = new Book({
@@ -38,7 +34,7 @@ const addBook = async (req, res) => {
       message: 'Book added successfully',
       book: {
         ...newBook.toObject(),
-        pdf: newBook.pdfUrl // for frontend compatibility
+        pdf: newBook.pdfUrl,
       }
     });
   } catch (err) {
@@ -51,3 +47,5 @@ const addBook = async (req, res) => {
 };
 
 module.exports = { addBook };
+
+

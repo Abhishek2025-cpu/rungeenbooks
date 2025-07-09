@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bookController = require('../Controllars/bookController');
+const bookController = require('../Controllars/booksController');
 const upload = require('../middlewares/multer'); // your updated multer config yes
 
 // ✅ Add Book Route (with coverImage, otherImages, and pdf)
