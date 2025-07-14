@@ -5,7 +5,7 @@ const upload = require('../middlewares/multer'); // fields-based upload
 const { addBook,getBooksByCategory } = require('../Controllars/booksController');
 
 router.post('/add-book', upload, addBook);
-router.get('/books/category/:categoryId', getBooksByCategory);
+router.get('/category/:categoryId', getBooksByCategory);
 
 module.exports = router;
 
