@@ -51,6 +51,29 @@ console.log("BODY:", req.body);
   }
 };
 
-module.exports = { addBook };
+const getBooksByCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    if (!categoryId) {
+      return res.status(400).json({ error: 'Category ID is required' });
+    }
+
+    const books = await Book.find({ category: categoryId });
+
+    return res.status(200).json({
+      message: 'Books fetched successfully',
+      books,
+    });
+  } catch (err) {
+    console.error('Get Books By Category Error:', err);
+    return res.status(500).json({
+      error: 'Something went wrong',
+      details: err.message,
+    });
+  }
+};
+
+module.exports = { addBook,getBooksByCategory };
 
 
