@@ -18,6 +18,8 @@ const addBook = async (req, res) => {
       authorInfo,
       isfav,
     } = req.body;
+    const bookReview = req.body.bookReview ? JSON.parse(req.body.bookReview) : [];
+
 
     const pdfFile = req.files?.pdf?.[0];
     const coverImage = req.files?.coverImage?.[0];
@@ -34,6 +36,7 @@ const addBook = async (req, res) => {
       category,
       price,
       pdfUrl: `/uploads/${pdfFile.filename}`,
+         bookReview,
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
       images: {
         otherImages: otherImages.map(img => `/uploads/${img.filename}`)
@@ -46,6 +49,7 @@ const addBook = async (req, res) => {
       isfav: isfav === 'true' || isfav === true, // handle string input from form
       // overallRating, overallLikes, and bookReview are optional and defaulted in schema
     });
+   
 
     await newBook.save();
 
