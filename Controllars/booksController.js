@@ -6,14 +6,23 @@ const Book = require('../Models/Book');
 
 const addBook = async (req, res) => {
   console.log("FILES:", req.files);
-console.log("BODY:", req.body);
+  console.log("BODY:", req.body);
 
   try {
-    const { name, about, category, price } = req.body;
+    const {
+      name,
+      about,
+      category,
+      price,
+      authorName,
+      authorInfo,
+      isfav,
+    } = req.body;
 
     const pdfFile = req.files?.pdf?.[0];
     const coverImage = req.files?.coverImage?.[0];
     const otherImages = req.files?.otherImages || [];
+    const authorPhoto = req.files?.authorPhoto?.[0];
 
     if (!pdfFile) {
       return res.status(400).json({ error: 'PDF file is required' });
@@ -25,12 +34,17 @@ console.log("BODY:", req.body);
       category,
       price,
       pdfUrl: `/uploads/${pdfFile.filename}`,
-      //pdfFilename: pdfFile.filename,
-
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
       images: {
         otherImages: otherImages.map(img => `/uploads/${img.filename}`)
-      }
+      },
+      authorDetails: {
+        name: authorName,
+        info: authorInfo,
+        photo: authorPhoto ? `/uploads/${authorPhoto.filename}` : undefined,
+      },
+      isfav: isfav === 'true' || isfav === true, // handle string input from form
+      // overallRating, overallLikes, and bookReview are optional and defaulted in schema
     });
 
     await newBook.save();
@@ -50,6 +64,7 @@ console.log("BODY:", req.body);
     });
   }
 };
+
 
 const getBooksByCategory = async (req, res) => {
   try {
