@@ -17,6 +17,8 @@ const addBook = async (req, res) => {
       authorName,
       authorInfo,
       isfav,
+       overallRating,
+  overallLikes
     } = req.body;
     const bookReview = req.body.bookReview ? JSON.parse(req.body.bookReview) : [];
 
@@ -48,6 +50,8 @@ const addBook = async (req, res) => {
       },
       isfav: isfav === 'true' || isfav === true, // handle string input from form
       // overallRating, overallLikes, and bookReview are optional and defaulted in schema
+        overallRating: Number(overallRating) || 0,
+  overallLikes: Number(overallLikes) || 0
     });
    
 
