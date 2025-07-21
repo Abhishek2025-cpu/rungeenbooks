@@ -1,6 +1,3 @@
-
-
-
 const path = require('path');
 const Book = require('../Models/Book');
 
@@ -17,16 +14,35 @@ const addBook = async (req, res) => {
       authorName,
       authorInfo,
       isfav,
-       overallRating,
-  overallLikes
+      overallRating,
+      overallLikes
     } = req.body;
+
     const bookReview = req.body.bookReview ? JSON.parse(req.body.bookReview) : [];
 
+    // Map files by fieldname for easy lookup
+    const fileMap = {};
+    req.files?.forEach(file => {
+      fileMap[file.fieldname] = file;
+    });
 
-    const pdfFile = req.files?.pdf?.[0];
-    const coverImage = req.files?.coverImage?.[0];
-    const otherImages = req.files?.otherImages || [];
-    const authorPhoto = req.files?.authorPhoto?.[0];
+    const pdfFile = fileMap['pdf'];
+    const coverImage = fileMap['coverImage'];
+    const authorPhoto = fileMap['authorPhoto'];
+
+    // Filter out otherImages (can be multiple)
+    const otherImages = req.files?.filter(f => f.fieldname === 'otherImages') || [];
+
+    // Replace userprofile keys like 'reviewProfile_0' with actual uploaded path
+    bookReview.forEach((review, index) => {
+      const profileKey = review.userprofile; // example: 'reviewProfile_0'
+      const profileFile = fileMap[profileKey];
+      if (profileFile) {
+        review.userprofile = `/uploads/${profileFile.filename}`;
+      } else {
+        review.userprofile = ''; // fallback or leave unchanged
+      }
+    });
 
     if (!pdfFile) {
       return res.status(400).json({ error: 'PDF file is required' });
@@ -38,7 +54,7 @@ const addBook = async (req, res) => {
       category,
       price,
       pdfUrl: `/uploads/${pdfFile.filename}`,
-         bookReview,
+      bookReview,
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
       images: {
         otherImages: otherImages.map(img => `/uploads/${img.filename}`)
@@ -48,12 +64,10 @@ const addBook = async (req, res) => {
         info: authorInfo,
         photo: authorPhoto ? `/uploads/${authorPhoto.filename}` : undefined,
       },
-      isfav: isfav === 'true' || isfav === true, // handle string input from form
-      // overallRating, overallLikes, and bookReview are optional and defaulted in schema
-        overallRating: Number(overallRating) || 0,
-  overallLikes: Number(overallLikes) || 0
+      isfav: isfav === 'true' || isfav === true,
+      overallRating: Number(overallRating) || 0,
+      overallLikes: Number(overallLikes) || 0
     });
-   
 
     await newBook.save();
 
@@ -72,6 +86,7 @@ const addBook = async (req, res) => {
     });
   }
 };
+
 
 
 const getBooksByCategory = async (req, res) => {
