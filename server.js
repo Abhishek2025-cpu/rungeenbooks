@@ -24,7 +24,7 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Use routes
-app.use('api/auth',authRoutes);
+app.use('/api/auth',authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/books', bookRoutes);
