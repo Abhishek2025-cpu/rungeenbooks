@@ -1,31 +1,49 @@
+// const multer = require('multer');
+// const path = require('path');
+
+// // Storage config
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'uploads/'); // make sure this folder exists
+//   },
+//   filename: (req, file, cb) => {
+//     const uniqueName = `${Date.now()}-${file.originalname}`;
+//     cb(null, uniqueName);
+//   }
+// });
+
+// const upload = multer({
+//   storage,
+//   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+// }).fields([
+//   { name: 'pdf', maxCount: 1 },
+//   { name: 'coverImage', maxCount: 1 },
+//   { name: 'authorPhoto', maxCount: 1 },
+//   { name: 'otherImages', maxCount: 5 } // allow multiple otherImages
+// ]);
+
+// module.exports = upload;
+
+
+
 const multer = require('multer');
 const path = require('path');
 
 // Storage config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Ensure this 'uploads' directory exists at the root of your project
+    cb(null, 'uploads/'); // ensure 'uploads/' directory exists
   },
   filename: (req, file, cb) => {
-    // Create a unique filename to prevent overwrites
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
   }
 });
 
-// File filter to accept only images
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Not an image! Please upload an image.'), false);
-  }
-};
-
+// Accept ALL file fields, including dynamic ones like reviewProfile_0
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-});
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+}).any(); // Accept any file field
 
 module.exports = upload;
