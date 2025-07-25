@@ -12,7 +12,8 @@ const categoryRoutes = require('./Routes/categoryRoutes');
 const authRoutes = require('./Routes/authRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes');
 const bookRoutes = require('./Routes/books');
-const orderRoutes = require('./Routes/order'); // ✅ Make sure file path is correct
+const orderRoutes = require('./Routes/order');
+const userRoutes = require('./Routes/userRoutes'); // ✅ Make sure file path is correct
 
 // Middlewares
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
@@ -25,6 +26,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Use routes
 app.use('/api/auth',authRoutes);
+app.use('/api/user', userRoutes); // ✅ Ensure this is the correct path
 app.use('/api/categories', categoryRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/books', bookRoutes);
