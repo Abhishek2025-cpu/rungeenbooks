@@ -1,6 +1,8 @@
 const User = require('../Models/User');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const fs = require('fs'); 
+const path = require('path');
 
 // OTP Generator
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
@@ -199,7 +201,73 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { firstname, lastname, username, country_code, phone, email } = req.body;
 
+    // 1. Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: 0, message: "User not found" });
+    }
+
+    // 2. Check for uniqueness if username, email, or phone are being updated
+    if (username) {
+        // Check if the new username is already taken by ANOTHER user
+        const existingUsername = await User.findOne({ username, _id: { $ne: userId } });
+        if (existingUsername) return res.status(400).json({ success: 0, message: 'Username already taken' });
+        user.username = username;
+    }
+    if (email) {
+        const existingEmail = await User.findOne({ email, _id: { $ne: userId } });
+        if (existingEmail) return res.status(400).json({ success: 0, message: 'Email already registered by another user' });
+        user.email = email;
+    }
+    if (phone) {
+        const existingPhone = await User.findOne({ phone, _id: { $ne: userId } });
+        if (existingPhone) return res.status(400).json({ success: 0, message: 'Phone number already registered by another user' });
+        user.phone = phone;
+    }
+    
+    // 3. Update basic text fields
+    if (firstname) user.firstname = firstname;
+    if (lastname) user.lastname = lastname;
+    if (country_code) user.country_code = country_code;
+
+    // 4. Handle Profile Image Upload
+    if (req.file) {
+      // If user already has a profile image, delete the old one
+      if (user.profileImage) {
+        // Construct the full path to the old image
+        const oldImagePath = path.join(__dirname, '..', user.profileImage);
+        
+        // Check if the file exists and delete it
+        if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+        }
+      }
+      // Save the path of the new image (path is provided by multer)
+      user.profileImage = req.file.path;
+    }
+
+    // 5. Save the updated user document
+    const updatedUser = await user.save();
+
+    // Hide password from the response
+    updatedUser.password = undefined;
+
+    res.status(200).json({
+      success: 1,
+      message: 'Profile updated successfully',
+      data: updatedUser
+    });
+
+  } catch (err) {
+    console.error('Update Profile Error:', err);
+    res.status(500).json({ success: 0, message: 'Server error during profile update', error: err.message });
+  }
+};
 
 
 
