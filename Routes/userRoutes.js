@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const uploadProfile = require('../middlewares/uploadProfile'); // cloudinary
-const userController = require('../Controllers/userController'); // ✅ correct spelling
+const userController = require('../Controllars/userController'); // ✅ correct spelling
 
 router.get('/get', userController.getAllUsers);
 router.put('/update/:id', uploadProfile.single('profileImage'), userController.updateUser);
