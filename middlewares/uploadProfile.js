@@ -6,7 +6,7 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'user_profiles',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
+    // ✅ removed allowed_formats
   },
 });
 
