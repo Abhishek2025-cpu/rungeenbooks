@@ -74,7 +74,8 @@ exports.deleteReview = async (req, res) => {
   }
 };
 
-// Get all reviews for a specific book
+
+// Get all reviews for a specific book with review count
 exports.getReviewsByBookId = async (req, res) => {
   try {
     const { bookId } = req.params;
@@ -83,7 +84,13 @@ exports.getReviewsByBookId = async (req, res) => {
       .populate('user', 'firstname lastname profileImage')
       .populate('book', 'title');
 
-    res.json({ success: true, reviews });
+    const reviewCount = reviews.length;
+
+    res.json({
+      success: true,
+      reviewCount,
+      reviews
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
