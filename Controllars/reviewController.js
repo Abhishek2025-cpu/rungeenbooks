@@ -52,15 +52,24 @@ exports.getReview = async (req, res) => {
 exports.updateReview = async (req, res) => {
   try {
     const { rating, description } = req.body;
-    const updated = await Review.findByIdAndUpdate(req.params.id, { rating, description }, { new: true });
+    const userId = req.user.id; // From authenticated user (middleware like JWT)
 
-    if (!updated) return res.status(404).json({ success: false, message: "Review not found" });
+    const updated = await Review.findOneAndUpdate(
+      { _id: req.params.id, user: userId }, // match review by ID AND user ID
+      { rating, description },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Review not found or unauthorized" });
+    }
 
     res.json({ success: true, message: "Review updated", review: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // Delete review
 exports.deleteReview = async (req, res) => {
