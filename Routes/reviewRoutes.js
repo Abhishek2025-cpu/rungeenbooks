@@ -12,7 +12,7 @@ router.get('/get-all', reviewController.getAllReviews);
 router.get('/single/:id', reviewController.getReview);
 
 // UPDATE review
-router.put('/update/:id', reviewController.updateReview);
+router.put('/update-review/:id', reviewController.updateReview);
 
 // DELETE review
 router.delete('/delete/:id', reviewController.deleteReview);
