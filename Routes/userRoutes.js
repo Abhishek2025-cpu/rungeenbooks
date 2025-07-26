@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/uploadProfile'); // updated path
-const userController = require('../controllers/userController');
+const userController = require('../Controllars/userController');
 
 router.get('/get', userController.getAllUsers);
 router.put('/update/:id', upload.single('profileImage'), userController.updateUser);
