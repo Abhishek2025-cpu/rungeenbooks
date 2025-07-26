@@ -10,9 +10,9 @@ const userSchema = new mongoose.Schema({
   password: String,
   isVerified: { type: Boolean, default: false },
   otp: Number,
-  otpExpires: Date
+  otpExpires: Date,
+  profileImage: { type: String, default: '' } // <-- new field
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
-
 

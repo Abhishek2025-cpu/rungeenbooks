@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { updateUserProfile } = require('../Controllars/authController'); // or userController
-const upload = require('../middlewares/multer'); // import multer config
+const upload = require('../middleware/uploadProfileImage'); // updated path
+const userController = require('../controllers/userController');
 
-router.put('/update-profile/:userId', upload, updateUserProfile);
+router.get('/get', userController.getAllUsers);
+router.put('/update/:id', upload.single('profileImage'), userController.updateUser);
+router.delete('/delete/:id', userController.deleteUser);
 
 module.exports = router;
+
