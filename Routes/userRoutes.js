@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const uploadProfile = require('../middlewares/uploadProfile'); // ✅ use cloudinary uploader
-const userController = require('../Controllars/userController'); // ✅ also fix "Controllars" to "Controllers"
+
+const uploadProfile = require('../middlewares/uploadProfile'); // cloudinary
+const userController = require('../Controllers/userController'); // ✅ correct spelling
 
 router.get('/get', userController.getAllUsers);
 router.put('/update/:id', uploadProfile.single('profileImage'), userController.updateUser);
