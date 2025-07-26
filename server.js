@@ -14,6 +14,7 @@ const paymentRoutes = require('./Routes/paymentRoutes');
 const bookRoutes = require('./Routes/books');
 const orderRoutes = require('./Routes/order');
 const userRoutes = require('./Routes/userRoutes'); // ✅ Make sure file path is correct
+const reviewRoutes = require('./Routes/reviewRoutes'); // ✅ Ensure this is the correct path
 
 // Middlewares
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
@@ -31,6 +32,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api', orderRoutes); // ✅ Now it’s in the right place
+app.use('/api/reviews', reviewRoutes); // ✅ Ensure this is the correct path
 
 // 404 and error handlers
 app.use((req, res, next) => res.status(404).json({ error: 'Not Found' }));
