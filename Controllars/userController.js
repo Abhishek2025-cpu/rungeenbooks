@@ -11,21 +11,26 @@ exports.getAllUsers = async (req, res) => {
 };
 
 // UPDATE user profile (with profileImage)
-exports.updateUser = async (req, res) => {
+exports.updateReview = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updateData = req.body;
+    const { rating, description, userId } = req.body; // Get user ID from body
 
-    if (req.file && req.file.path) {
-      updateData.profileImage = req.file.path;
+    const updated = await Review.findOneAndUpdate(
+      { _id: req.params.id, user: userId }, // Match by review ID and user ID
+      { rating, description },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Review not found or user not authorized" });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
-    res.json({ success: true, message: "User updated successfully", user: updatedUser });
+    res.json({ success: true, message: "Review updated", review: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // DELETE user profile
 exports.deleteUser = async (req, res) => {
