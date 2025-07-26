@@ -2,7 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const bookLikeController = require('../controllers/bookLikeController');
+const bookLikeController = require('../Controllars/bookLikeController');
 
 router.post('/post-like', bookLikeController.likeBook);
 router.delete('/remove/:bookId/:userId', bookLikeController.unlikeBook);
