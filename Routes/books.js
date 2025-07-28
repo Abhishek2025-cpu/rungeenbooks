@@ -2,10 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/multer'); // fields-based upload
-const { addBook,getBooksByCategory } = require('../Controllars/booksController');
+const bookContr = require('../Controllars/booksController');
 
-router.post('/add-book', upload, addBook);
-router.get('/get-books/category/:categoryId', getBooksByCategory);
+router.post('/add-book', upload, bookContr.addBook);
+router.get('/get-books/category/:categoryId', bookContr.getBooksByCategory);
+router.get('/single/:id', bookContr.getBookById);
 
 module.exports = router;
 
