@@ -4,33 +4,25 @@ const BookLike = require('../Models/bookLikeModel');
 const Book = require('../Models/Book');
 const User = require('../Models/User');
 
-// POST /like
-exports.likeBook = async (req, res) => {
+// PATCH /like
+exports.toggleLikeBook = async (req, res) => {
   const { bookId, userId } = req.body;
 
   try {
-    const like = await BookLike.create({ book: bookId, user: userId });
-    res.status(201).json({ success: true, like });
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(400).json({ success: false, message: 'Already liked.' });
+    const existingLike = await BookLike.findOne({ book: bookId, user: userId });
+
+    if (existingLike) {
+      await existingLike.deleteOne();
+      return res.json({ success: true, message: 'Unliked successfully', liked: false });
+    } else {
+      const like = await BookLike.create({ book: bookId, user: userId });
+      return res.status(201).json({ success: true, message: 'Liked successfully', liked: true, like });
     }
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-// DELETE /like/:bookId/:userId
-exports.unlikeBook = async (req, res) => {
-  const { bookId, userId } = req.params;
-
-  try {
-    const deleted = await BookLike.findOneAndDelete({ book: bookId, user: userId });
-    if (!deleted) return res.status(404).json({ success: false, message: 'Like not found' });
-    res.json({ success: true, message: 'Unliked successfully' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 // GET /likes/book/:bookId
 exports.getLikesByBook = async (req, res) => {
