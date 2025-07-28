@@ -114,28 +114,36 @@ exports.getBookById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Get book with populated category and authorId
-    const book = await Book.findById(id).populate('category').populate('authorId').lean();
+    // 1. Fetch book and populate category & author
+    const book = await Book.findById(id)
+      .populate('category')
+      .populate('authorId')
+      .lean();
 
     if (!book) {
       return res.status(404).json({ success: false, message: 'Book not found' });
     }
 
-    // 2. Extract authorDetails and remove original authorId
-    const { authorId, ...rest } = book;
+    // 2. Extract and rename authorId -> authorDetails
+    const { authorId, category, ...rest } = book;
 
-    // 3. Get reviews
+    // 3. Remove 'images' from populated category
+    const cleanCategory = { ...category };
+    delete cleanCategory.images;
+
+    // 4. Get reviews
     const reviews = await Review.find({ book: id }).populate('user', 'name email').lean();
 
-    // 4. Count likes
+    // 5. Count likes
     const likesCount = await BookLike.countDocuments({ book: id });
 
-    // 5. Send response
+    // 6. Respond with cleaned structure
     res.json({
       success: true,
       book: {
         ...rest,
-        authorDetails: authorId, // renamed field
+        category: cleanCategory,
+        authorDetails: authorId,
       },
       reviews,
       likesCount,
