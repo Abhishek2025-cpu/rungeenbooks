@@ -10,7 +10,7 @@ exports.addBook = async (req, res) => {
   console.log("BODY:", req.body);
 
   try {
-    const { name, about, category, price,authorId  } = req.body;
+    const { name, about, category, price, authorId, isFree } = req.body;
 
     // Map files by fieldname
     const fileMap = {};
@@ -33,6 +33,7 @@ exports.addBook = async (req, res) => {
       pdfUrl: `/uploads/${pdfFile.filename}`,
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
       authorId,
+      isFree: isFree === 'true' // ✅ Convert string to Boolean
     });
 
     await newBook.save();
@@ -52,6 +53,7 @@ exports.addBook = async (req, res) => {
     });
   }
 };
+
 
 
 

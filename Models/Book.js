@@ -9,9 +9,9 @@ const bookSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   pdfUrl: { type: String, required: true },
   coverImage: { type: String },
-  authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'AuthorInfo', required: true }, // ✅ added
+  authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'AuthorInfo', required: true },
   subscribeId: { type: String, default: null },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  isFree: { type: Boolean, default: false }  // ✅ New field
 }, { timestamps: true });
-
 module.exports = mongoose.models.Book || mongoose.model('Book', bookSchema);
