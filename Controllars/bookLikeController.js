@@ -46,3 +46,23 @@ exports.getLikesByCategory = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+
+// GET /likes/user/:userId
+exports.getLikesByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const likes = await BookLike.find({ user: userId })
+      .populate('book', 'name coverImage price') // You can customize the fields
+      .populate('user', 'name email');
+
+    res.json({
+      success: true,
+      count: likes.length,
+      likes,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};

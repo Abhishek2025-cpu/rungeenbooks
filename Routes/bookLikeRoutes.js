@@ -7,5 +7,6 @@ const bookLikeController = require('../Controllars/bookLikeController');
 router.patch('/like', bookLikeController.toggleLikeBook);
 router.get('/all/book/:bookId', bookLikeController.getLikesByBook);
 router.get('/all/category/:categoryId', bookLikeController.getLikesByCategory);
+router.get('/:userId', bookLikeController.getLikesByUserId);
 
 module.exports = router;
