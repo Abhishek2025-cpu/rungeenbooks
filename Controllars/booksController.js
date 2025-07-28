@@ -68,10 +68,10 @@ exports.getBooksByCategory = async (req, res) => {
       return res.status(400).json({ error: 'Category ID is required' });
     }
 
-    // Step 1: Fetch all books for the category
-    const books = await Book.find({ category: categoryId }).lean(); // lean() returns plain JS objects
+    // Step 1: Fetch all books in the category
+    const books = await Book.find({ category: categoryId }).lean();
 
-    // Step 2: Enhance each book with authorDetails, reviews, and likesCount
+    // Step 2: Enhance each book
     const enrichedBooks = await Promise.all(
       books.map(async (book) => {
         // Fetch author details
@@ -85,11 +85,21 @@ exports.getBooksByCategory = async (req, res) => {
         // Count likes
         const likesCount = await BookLike.countDocuments({ book: book._id });
 
+        // Fetch related books from same category excluding current book
+        const relatedBooks = await Book.find({
+          category: categoryId,
+          _id: { $ne: book._id },
+        })
+          .select('name coverImage price isFree') // limit fields
+          .limit(5)
+          .lean();
+
         return {
           ...book,
-          authorDetails,     // replace authorId with full author details
+          authorDetails,
           reviews,
           likesCount,
+          relatedBooks,
         };
       })
     );
@@ -106,6 +116,7 @@ exports.getBooksByCategory = async (req, res) => {
     });
   }
 };
+
 
 
 
