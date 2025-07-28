@@ -11,6 +11,8 @@ const bookSchema = new mongoose.Schema({
   coverImage: { type: String },
   authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'AuthorInfo', required: true },
   subscribeId: { type: String, default: null },
+  status: { type: Boolean, default: true }, // add this
+
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   isFree: { type: Boolean, default: false }  // ✅ New field
 }, { timestamps: true });

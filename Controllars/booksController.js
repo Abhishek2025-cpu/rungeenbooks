@@ -171,15 +171,18 @@ exports.deleteBook = async (req, res) => {
   }
 };
 
-
 exports.toggleBookStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { disable } = req.query; // ?disable=true or false
+    const { disable } = req.query; // expects 'true' or 'false'
 
-    const book = await Book.findByIdAndUpdate(id, {
-      isDisabled: disable === 'true'
-    }, { new: true });
+    const newStatus = disable !== 'true'; // disable=true → status=false
+
+    const book = await Book.findByIdAndUpdate(
+      id,
+      { status: newStatus },
+      { new: true }
+    );
 
     if (!book) {
       return res.status(404).json({ error: 'Book not found' });
@@ -187,7 +190,7 @@ exports.toggleBookStatus = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Book ${disable === 'true' ? 'disabled' : 'enabled'} successfully`,
+      message: `Book ${book.status ? 'enabled' : 'disabled'} successfully`,
       book
     });
   } catch (err) {
@@ -195,6 +198,7 @@ exports.toggleBookStatus = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 
 
