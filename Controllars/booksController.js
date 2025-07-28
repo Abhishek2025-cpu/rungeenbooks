@@ -1,26 +1,18 @@
 const path = require('path');
 const Book = require('../Models/Book');
 
-const addBook = async (req, res) => {
+const Review = require('../Models/Review');
+const BookLike = require('../Models/bookLikeModel');
+const AuthorInfo = require('../Models/authorInfoModel');
+
+exports.addBook = async (req, res) => {
   console.log("FILES:", req.files);
   console.log("BODY:", req.body);
 
   try {
-    const {
-      name,
-      about,
-      category,
-      price,
-      authorName,
-      authorInfo,
-      isfav,
-      overallRating,
-      overallLikes
-    } = req.body;
+    const { name, about, category, price } = req.body;
 
-    const bookReview = req.body.bookReview ? JSON.parse(req.body.bookReview) : [];
-
-    // Map files by fieldname for easy lookup
+    // Map files by fieldname
     const fileMap = {};
     req.files?.forEach(file => {
       fileMap[file.fieldname] = file;
@@ -28,21 +20,6 @@ const addBook = async (req, res) => {
 
     const pdfFile = fileMap['pdf'];
     const coverImage = fileMap['coverImage'];
-    const authorPhoto = fileMap['authorPhoto'];
-
-    // Filter out otherImages (can be multiple)
-    const otherImages = req.files?.filter(f => f.fieldname === 'otherImages') || [];
-
-    // Replace userprofile keys like 'reviewProfile_0' with actual uploaded path
-    bookReview.forEach((review, index) => {
-      const profileKey = review.userprofile; // example: 'reviewProfile_0'
-      const profileFile = fileMap[profileKey];
-      if (profileFile) {
-        review.userprofile = `/uploads/${profileFile.filename}`;
-      } else {
-        review.userprofile = ''; // fallback or leave unchanged
-      }
-    });
 
     if (!pdfFile) {
       return res.status(400).json({ error: 'PDF file is required' });
@@ -54,19 +31,7 @@ const addBook = async (req, res) => {
       category,
       price,
       pdfUrl: `/uploads/${pdfFile.filename}`,
-      bookReview,
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
-      images: {
-        otherImages: otherImages.map(img => `/uploads/${img.filename}`)
-      },
-      authorDetails: {
-        name: authorName,
-        info: authorInfo,
-        photo: authorPhoto ? `/uploads/${authorPhoto.filename}` : undefined,
-      },
-      isfav: isfav === 'true' || isfav === true,
-      overallRating: Number(overallRating) || 0,
-      overallLikes: Number(overallLikes) || 0
     });
 
     await newBook.save();
@@ -89,7 +54,8 @@ const addBook = async (req, res) => {
 
 
 
-const getBooksByCategory = async (req, res) => {
+
+exports.getBooksByCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
 
@@ -112,6 +78,46 @@ const getBooksByCategory = async (req, res) => {
   }
 };
 
-module.exports = { addBook,getBooksByCategory };
+
+
+
+exports.getBookById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Get book
+    const book = await Book.findById(id).populate('category').populate('authorId');
+
+    if (!book) {
+      return res.status(404).json({ success: false, message: 'Book not found' });
+    }
+
+    // 2. Get reviews
+    const reviews = await Review.find({ book: id }).populate('user', 'name email');
+
+    // 3. Count likes
+    const likesCount = await BookLike.countDocuments({ book: id });
+
+    // 4. Prepare response
+    res.json({
+      success: true,
+      book,
+      author: book.authorId, // from population
+      reviews,
+      likesCount
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+
+
+
+
+
+
+
+
 
 
