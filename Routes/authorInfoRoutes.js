@@ -7,8 +7,8 @@ const {
   updateAuthor
 } = require('../Controllars/authorInfoController');
 
-router.post('/add', upload.single('profile'), addAuthor);
+router.post('/add', upload, addAuthor);
 router.get('/get', getAuthors);
-router.patch('/update/:id', upload.single('profile'), updateAuthor);
+router.patch('/update/:id', upload, updateAuthor);
 
 module.exports = router;
