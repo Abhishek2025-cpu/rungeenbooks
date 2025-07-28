@@ -114,31 +114,37 @@ exports.getBookById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Get book
-    const book = await Book.findById(id).populate('category').populate('authorId');
+    // 1. Get book with populated category and authorId
+    const book = await Book.findById(id).populate('category').populate('authorId').lean();
 
     if (!book) {
       return res.status(404).json({ success: false, message: 'Book not found' });
     }
 
-    // 2. Get reviews
-    const reviews = await Review.find({ book: id }).populate('user', 'name email');
+    // 2. Extract authorDetails and remove original authorId
+    const { authorId, ...rest } = book;
 
-    // 3. Count likes
+    // 3. Get reviews
+    const reviews = await Review.find({ book: id }).populate('user', 'name email').lean();
+
+    // 4. Count likes
     const likesCount = await BookLike.countDocuments({ book: id });
 
-    // 4. Prepare response
+    // 5. Send response
     res.json({
       success: true,
-      book,
-
+      book: {
+        ...rest,
+        authorDetails: authorId, // renamed field
+      },
       reviews,
-      likesCount
+      likesCount,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 
 exports.updateBook = async (req, res) => {
