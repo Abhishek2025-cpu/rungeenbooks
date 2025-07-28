@@ -171,33 +171,38 @@ exports.deleteBook = async (req, res) => {
   }
 };
 
+
+
 exports.toggleBookStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { disable } = req.query; // expects 'true' or 'false'
 
-    const newStatus = disable !== 'true'; // disable=true → status=false
-
-    const book = await Book.findByIdAndUpdate(
-      id,
-      { status: newStatus },
-      { new: true }
-    );
-
+    // Fetch the current book
+    const book = await Book.findById(id);
     if (!book) {
       return res.status(404).json({ error: 'Book not found' });
     }
 
+    // Toggle the status
+    const updatedStatus = !book.status;
+
+    const updatedBook = await Book.findByIdAndUpdate(
+      id,
+      { status: updatedStatus },
+      { new: true }
+    );
+
     res.json({
       success: true,
-      message: `Book ${book.status ? 'enabled' : 'disabled'} successfully`,
-      book
+      message: `Book ${updatedBook.status ? 'enabled' : 'disabled'} successfully`,
+      book: updatedBook
     });
   } catch (err) {
     console.error('Toggle Book Status Error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 
 
