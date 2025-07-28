@@ -10,7 +10,7 @@ exports.addBook = async (req, res) => {
   console.log("BODY:", req.body);
 
   try {
-    const { name, about, category, price } = req.body;
+    const { name, about, category, price,authorId  } = req.body;
 
     // Map files by fieldname
     const fileMap = {};
@@ -32,6 +32,7 @@ exports.addBook = async (req, res) => {
       price,
       pdfUrl: `/uploads/${pdfFile.filename}`,
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
+      authorId,
     });
 
     await newBook.save();
