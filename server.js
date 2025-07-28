@@ -17,6 +17,7 @@ const userRoutes = require('./Routes/userRoutes'); // ✅ Make sure file path is
 const reviewRoutes = require('./Routes/reviewRoutes'); // ✅ Ensure this is the correct path
 const bookLikeRoutes = require('./Routes/bookLikeRoutes');
 const authorInfoRoutes = require('./Routes/authorInfoRoutes'); // ✅ Ensure this is the correct path
+const trendingBookRoutes = require('./Routes/trendingBookRoutes');
 
 // Middlewares
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
@@ -37,6 +38,9 @@ app.use('/api', orderRoutes); // ✅ Now it’s in the right place
 app.use('/api/reviews', reviewRoutes); // ✅ Ensure this is the correct path
 app.use('/api/book-likes', bookLikeRoutes);
 app.use('/api/author-info', authorInfoRoutes); // ✅ Ensure this is the correct path
+
+app.use('/api/trending-books', trendingBookRoutes);
+
 
 
 // 404 and error handlers
