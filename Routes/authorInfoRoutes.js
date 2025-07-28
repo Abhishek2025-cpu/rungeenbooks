@@ -5,7 +5,7 @@ const {
   addAuthor,
   getAuthors,
   updateAuthor
-} = require('../controllers/authorInfoController');
+} = require('../Controllars/authorInfoController');
 
 router.post('/add', upload.single('profile'), addAuthor);
 router.get('/get', getAuthors);
