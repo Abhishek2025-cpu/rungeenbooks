@@ -114,7 +114,7 @@ exports.getBookById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Fetch book and populate category & author
+    // 1. Fetch the main book
     const book = await Book.findById(id)
       .populate('category')
       .populate('authorId')
@@ -124,10 +124,10 @@ exports.getBookById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Book not found' });
     }
 
-    // 2. Extract and rename authorId -> authorDetails
+    // 2. Prepare response fields
     const { authorId, category, ...rest } = book;
 
-    // 3. Remove 'images' from populated category
+    // 3. Remove category.images
     const cleanCategory = { ...category };
     delete cleanCategory.images;
 
@@ -137,7 +137,16 @@ exports.getBookById = async (req, res) => {
     // 5. Count likes
     const likesCount = await BookLike.countDocuments({ book: id });
 
-    // 6. Respond with cleaned structure
+    // 6. Fetch related books by category (excluding the current book)
+    const relatedBooks = await Book.find({
+      category: book.category._id,
+      _id: { $ne: id },
+    })
+      .select('name coverImage price isFree') // Fetch only needed fields
+      .limit(5) // Optional: limit the number of related books
+      .lean();
+
+    // 7. Return full response
     res.json({
       success: true,
       book: {
@@ -147,11 +156,13 @@ exports.getBookById = async (req, res) => {
       },
       reviews,
       likesCount,
+      relatedBooks,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 
 
