@@ -79,7 +79,8 @@ exports.getBooksByCategory = async (req, res) => {
 
         // Fetch reviews
         const reviews = await Review.find({ book: book._id })
-          .populate('user', 'name email')
+          .populate('user', 'name profile')
+
           .lean();
 
         // Count likes
@@ -143,7 +144,7 @@ exports.getBookById = async (req, res) => {
     delete cleanCategory.images;
 
     // 4. Get reviews
-    const reviews = await Review.find({ book: id }).populate('user', 'name email').lean();
+    const reviews = await Review.find({ book: id }).populate('user', 'name profile').lean();
 
     // 5. Count likes
     const likesCount = await BookLike.countDocuments({ book: id });

@@ -1,6 +1,10 @@
 // controllers/trendingBookController.js
 const TrendingBook = require('../Models/trendingBookModel');
 const Book = require('../Models/Book');
+const AuthorInfo = require('../Models/authorInfoModel');
+
+
+
 
 // Add book to trending
 exports.addTrendingBook = async (req, res) => {
@@ -57,11 +61,35 @@ exports.removeTrendingBook = async (req, res) => {
 // Get all trending books
 exports.getTrendingBooks = async (req, res) => {
   try {
-    const books = await TrendingBook.find()
-      .populate('book')
-      .sort({ position: 1 });
+    const trendingBooks = await TrendingBook.find().populate({
+      path: 'book',
+      populate: {
+        path: 'authorId',
+        model: 'AuthorInfo'
+      }
+    }).sort({ position: 1 }).lean();
 
-    res.json({ success: true, books });
+    // Transform authorId to authorDetails
+    const booksWithAuthorDetails = trendingBooks.map(trending => {
+      const book = trending.book;
+
+      const {
+        authorId, // populated author object
+        ...restOfBook
+      } = book;
+
+      return {
+        _id: trending._id,
+        position: trending.position,
+        addedAt: trending.addedAt,
+        book: {
+          ...restOfBook,
+          authorDetails: authorId // replace `authorId` with `authorDetails`
+        }
+      };
+    });
+
+    res.json({ success: true, books: booksWithAuthorDetails });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
