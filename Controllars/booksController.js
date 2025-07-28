@@ -103,7 +103,7 @@ exports.getBookById = async (req, res) => {
     res.json({
       success: true,
       book,
-      author: book.authorId, // from population
+
       reviews,
       likesCount
     });
