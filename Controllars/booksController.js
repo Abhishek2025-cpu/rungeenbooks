@@ -4,6 +4,8 @@ const Book = require('../Models/Book');
 const Review = require('../Models/Review');
 const BookLike = require('../Models/bookLikeModel');
 const AuthorInfo = require('../Models/authorInfoModel');
+const path = require('path');
+const fs = require('fs');
 
 exports.addBook = async (req, res) => {
   console.log("FILES:", req.files);
@@ -115,6 +117,84 @@ exports.getBookById = async (req, res) => {
 };
 
 
+exports.updateBook = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (req.files?.length) {
+      const fileMap = {};
+      req.files.forEach(file => {
+        fileMap[file.fieldname] = file;
+      });
+
+      if (fileMap['pdf']) {
+        updates.pdfUrl = `/uploads/${fileMap['pdf'].filename}`;
+      }
+
+      if (fileMap['coverImage']) {
+        updates.coverImage = `/uploads/${fileMap['coverImage'].filename}`;
+      }
+    }
+
+    const updatedBook = await Book.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!updatedBook) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Book updated successfully',
+      book: updatedBook
+    });
+  } catch (err) {
+    console.error('Update Book Error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+
+exports.deleteBook = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Book.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+
+    res.json({ success: true, message: 'Book deleted successfully' });
+  } catch (err) {
+    console.error('Delete Book Error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+
+exports.toggleBookStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { disable } = req.query; // ?disable=true or false
+
+    const book = await Book.findByIdAndUpdate(id, {
+      isDisabled: disable === 'true'
+    }, { new: true });
+
+    if (!book) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+
+    res.json({
+      success: true,
+      message: `Book ${disable === 'true' ? 'disabled' : 'enabled'} successfully`,
+      book
+    });
+  } catch (err) {
+    console.error('Toggle Book Status Error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
 
 
 
