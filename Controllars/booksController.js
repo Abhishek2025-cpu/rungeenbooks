@@ -68,11 +68,35 @@ exports.getBooksByCategory = async (req, res) => {
       return res.status(400).json({ error: 'Category ID is required' });
     }
 
-    const books = await Book.find({ category: categoryId });
+    // Step 1: Fetch all books for the category
+    const books = await Book.find({ category: categoryId }).lean(); // lean() returns plain JS objects
+
+    // Step 2: Enhance each book with authorDetails, reviews, and likesCount
+    const enrichedBooks = await Promise.all(
+      books.map(async (book) => {
+        // Fetch author details
+        const authorDetails = await AuthorInfo.findById(book.authorId).lean();
+
+        // Fetch reviews
+        const reviews = await Review.find({ book: book._id })
+          .populate('user', 'name email')
+          .lean();
+
+        // Count likes
+        const likesCount = await BookLike.countDocuments({ book: book._id });
+
+        return {
+          ...book,
+          authorDetails,     // replace authorId with full author details
+          reviews,
+          likesCount,
+        };
+      })
+    );
 
     return res.status(200).json({
       message: 'Books fetched successfully',
-      books,
+      books: enrichedBooks,
     });
   } catch (err) {
     console.error('Get Books By Category Error:', err);
