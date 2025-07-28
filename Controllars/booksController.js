@@ -4,7 +4,7 @@ const Book = require('../Models/Book');
 const Review = require('../Models/Review');
 const BookLike = require('../Models/bookLikeModel');
 const AuthorInfo = require('../Models/authorInfoModel');
-const path = require('path');
+
 const fs = require('fs');
 
 exports.addBook = async (req, res) => {
