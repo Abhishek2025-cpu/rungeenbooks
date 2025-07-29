@@ -85,3 +85,40 @@ exports.getUserOrders = async (req, res) => {
   }
 };
 
+
+
+// ADMIN: Get all orders
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('user', 'firstname lastname email')
+      .populate('book', 'name price')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ADMIN: Get specific order detail
+exports.getSingleOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId)
+      .populate('user', 'firstname lastname email')
+      .populate('book', 'name price pdfUrl')
+      .lean();
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
