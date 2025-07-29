@@ -12,7 +12,12 @@ exports.addBook = async (req, res) => {
   console.log("BODY:", req.body);
 
   try {
-    const { name, about, category, price, authorId, isFree } = req.body;
+    const { name, about, category, price, authorId, isFree, language } = req.body;
+
+    // Validate language
+    if (!['English', 'Hindi'].includes(language)) {
+      return res.status(400).json({ error: 'Invalid language. Must be English or Hindi' });
+    }
 
     // Map files by fieldname
     const fileMap = {};
@@ -35,7 +40,8 @@ exports.addBook = async (req, res) => {
       pdfUrl: `/uploads/${pdfFile.filename}`,
       coverImage: coverImage ? `/uploads/${coverImage.filename}` : undefined,
       authorId,
-      isFree: isFree === 'true' // ✅ Convert string to Boolean
+      isFree: isFree === 'true',
+      language  // ✅ Include language
     });
 
     await newBook.save();
