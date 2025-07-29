@@ -2,6 +2,7 @@
 const TrendingBook = require('../Models/trendingBookModel');
 const Book = require('../Models/Book');
 const AuthorInfo = require('../Models/authorInfoModel');
+const Review = require('../Models/Review');
 
 
 
@@ -64,49 +65,42 @@ exports.getTrendingBooks = async (req, res) => {
     const trendingBooks = await TrendingBook.find()
       .populate({
         path: 'book',
-        populate: [
-          {
-            path: 'authorId',
-            model: 'AuthorInfo'
-          },
-          {
-            path: 'reviews',
-            populate: {
-              path: 'user', // assuming reviews have a `user` field
-              model: 'User',
-              select: 'firstName lastName profileImage'
-            }
-          }
-        ]
+        populate: {
+          path: 'authorId',
+          model: 'AuthorInfo'
+        }
       })
       .sort({ position: 1 })
       .lean();
 
-    const booksWithAuthorAndReviews = trendingBooks.map(trending => {
-      const book = trending.book;
-      const { authorId, reviews = [], ...restOfBook } = book;
+    const booksWithDetails = await Promise.all(
+      trendingBooks.map(async trending => {
+        const book = trending.book;
+        const reviews = await Review.find({ book: book._id })
+          .populate('user', 'firstName lastName profileImage')
+          .lean();
 
-      const transformedReviews = reviews.map(review => {
-        const { user, ...restReview } = review;
+        const transformedReviews = reviews.map(r => ({
+          ...r,
+          reviewer: r.user,
+        }));
+
+        const { authorId, ...restBook } = book;
+
         return {
-          ...restReview,
-          reviewer: user // contains firstName, lastName, profileImage
+          _id: trending._id,
+          position: trending.position,
+          addedAt: trending.addedAt,
+          book: {
+            ...restBook,
+            authorDetails: authorId,
+            reviews: transformedReviews
+          }
         };
-      });
+      })
+    );
 
-      return {
-        _id: trending._id,
-        position: trending.position,
-        addedAt: trending.addedAt,
-        book: {
-          ...restOfBook,
-          authorDetails: authorId,
-          reviews: transformedReviews
-        }
-      };
-    });
-
-    res.json({ success: true, books: booksWithAuthorAndReviews });
+    res.json({ success: true, books: booksWithDetails });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
