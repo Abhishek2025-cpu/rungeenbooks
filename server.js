@@ -12,7 +12,7 @@ const categoryRoutes = require('./Routes/categoryRoutes');
 const authRoutes = require('./Routes/authRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes');
 const bookRoutes = require('./Routes/books');
-const orderRoutes = require('./Routes/order');
+//const orderRoutes = require('./Routes/order');
 const userRoutes = require('./Routes/userRoutes'); // ✅ Make sure file path is correct
 const reviewRoutes = require('./Routes/reviewRoutes'); // ✅ Ensure this is the correct path
 const bookLikeRoutes = require('./Routes/bookLikeRoutes');
@@ -33,7 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth',authRoutes);
 app.use('/api/user', userRoutes); // ✅ Ensure this is the correct path
 app.use('/api/categories', categoryRoutes);
-app.use('/api/payment', paymentRoutes);
+//app.use('/api/payment', paymentRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api', orderRoutes); // ✅ Now it’s in the right place
 app.use('/api/reviews', reviewRoutes); // ✅ Ensure this is the correct path

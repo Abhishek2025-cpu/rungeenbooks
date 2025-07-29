@@ -4,7 +4,7 @@ const {
   createOrder,
   verifyPayment,
   getUserOrders
-} = require('../controllers/orderController');
+} = require('../Controllars/orderController');
 
 router.post('/create', createOrder);
 router.post('/verify', verifyPayment);
