@@ -61,22 +61,38 @@ exports.removeTrendingBook = async (req, res) => {
 // Get all trending books
 exports.getTrendingBooks = async (req, res) => {
   try {
-    const trendingBooks = await TrendingBook.find().populate({
-      path: 'book',
-      populate: {
-        path: 'authorId',
-        model: 'AuthorInfo'
-      }
-    }).sort({ position: 1 }).lean();
+    const trendingBooks = await TrendingBook.find()
+      .populate({
+        path: 'book',
+        populate: [
+          {
+            path: 'authorId',
+            model: 'AuthorInfo'
+          },
+          {
+            path: 'reviews',
+            populate: {
+              path: 'user', // assuming reviews have a `user` field
+              model: 'User',
+              select: 'firstName lastName profileImage'
+            }
+          }
+        ]
+      })
+      .sort({ position: 1 })
+      .lean();
 
-    // Transform authorId to authorDetails
-    const booksWithAuthorDetails = trendingBooks.map(trending => {
+    const booksWithAuthorAndReviews = trendingBooks.map(trending => {
       const book = trending.book;
+      const { authorId, reviews = [], ...restOfBook } = book;
 
-      const {
-        authorId, // populated author object
-        ...restOfBook
-      } = book;
+      const transformedReviews = reviews.map(review => {
+        const { user, ...restReview } = review;
+        return {
+          ...restReview,
+          reviewer: user // contains firstName, lastName, profileImage
+        };
+      });
 
       return {
         _id: trending._id,
@@ -84,12 +100,13 @@ exports.getTrendingBooks = async (req, res) => {
         addedAt: trending.addedAt,
         book: {
           ...restOfBook,
-          authorDetails: authorId // replace `authorId` with `authorDetails`
+          authorDetails: authorId,
+          reviews: transformedReviews
         }
       };
     });
 
-    res.json({ success: true, books: booksWithAuthorDetails });
+    res.json({ success: true, books: booksWithAuthorAndReviews });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
