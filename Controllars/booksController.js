@@ -187,10 +187,11 @@ exports.getBookById = async (req, res) => {
         category: cleanCategory,
         authorDetails: authorId,
         averageRating: averageRating ? parseFloat(averageRating) : 0,
-      },
       reviews,
       likesCount,
       relatedBooks,
+      }
+    
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
