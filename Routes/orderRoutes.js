@@ -15,6 +15,6 @@ router.get('/user/:userId', getUserOrders);
 router.get('/admin/all', getAllOrders);
 
 // Admin: Get single order details
-router.get('single/:orderId', getSingleOrder);
+router.get('/single/:orderId', getSingleOrder);
 
 module.exports = router;
