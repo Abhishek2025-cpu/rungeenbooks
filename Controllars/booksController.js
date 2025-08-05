@@ -289,6 +289,70 @@ exports.toggleBookStatus = async (req, res) => {
 };
 
 
+//latest books
+
+exports.getLatestBooks = async (req, res) => {
+  try {
+    // Step 1: Get distinct categories
+    const categories = await Book.distinct('category');
+
+    const latestBooks = await Promise.all(
+      categories.map(async (categoryId) => {
+        // Step 2: Get the latest book in this category
+        const latestBook = await Book.findOne({ category: categoryId })
+          .sort({ updatedAt: -1 }) // newest first
+          .lean();
+
+        if (!latestBook) return null;
+
+        // Step 3: Enrich with author, reviews, likeCount
+        const authorDetails = await AuthorInfo.findById(latestBook.authorId).lean();
+
+        const reviewsRaw = await Review.find({ book: latestBook._id })
+          .populate('user', '_id firstname lastname profileImage')
+          .lean();
+
+        const reviews = reviewsRaw.map((review) => ({
+          ...review,
+          user: {
+            _id: review.user._id,
+            name: `${review.user.firstname || ''} ${review.user.lastname || ''}`.trim(),
+            profile: review.user.profileImage || '',
+          },
+        }));
+
+        const averageRating = reviews.length
+          ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+          : null;
+
+        const likeCount = await BookLike.countDocuments({ book: latestBook._id });
+
+        return {
+          ...latestBook,
+          authorDetails,
+          reviews,
+          likeCount,
+          averageRating: averageRating ? parseFloat(averageRating) : 0,
+        };
+      })
+    );
+
+    const filteredBooks = latestBooks.filter(Boolean); // remove nulls if any
+
+    res.status(200).json({
+      message: 'Latest books from each category fetched successfully',
+      books: filteredBooks,
+    });
+  } catch (err) {
+    console.error('Get Latest Books Error:', err);
+    res.status(500).json({
+      error: 'Something went wrong',
+      details: err.message,
+    });
+  }
+};
+
+
 
 
 
