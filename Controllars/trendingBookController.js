@@ -3,6 +3,7 @@ const TrendingBook = require('../Models/trendingBookModel');
 const Book = require('../Models/Book');
 const AuthorInfo = require('../Models/authorInfoModel');
 const Review = require('../Models/Review');
+const BookLike = require('../Models/bookLikeModel');
 
 
 
@@ -76,6 +77,8 @@ exports.getTrendingBooks = async (req, res) => {
     const booksWithDetails = await Promise.all(
       trendingBooks.map(async trending => {
         const book = trending.book;
+
+        // Get all reviews for the book
         const reviews = await Review.find({ book: book._id })
           .populate('user', 'firstName lastName profileImage')
           .lean();
@@ -84,6 +87,13 @@ exports.getTrendingBooks = async (req, res) => {
           ...r,
           reviewer: r.user,
         }));
+
+        // Calculate average rating
+        const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+        const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
+
+        // Get like count
+        const likeCount = await BookLike.countDocuments({ book: book._id });
 
         const { authorId, ...restBook } = book;
 
@@ -94,7 +104,9 @@ exports.getTrendingBooks = async (req, res) => {
           book: {
             ...restBook,
             authorDetails: authorId,
-            reviews: transformedReviews
+            reviews: transformedReviews,
+            likeCount,
+            averageRating
           }
         };
       })
