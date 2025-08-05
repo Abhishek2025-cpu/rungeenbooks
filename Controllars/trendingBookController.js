@@ -78,7 +78,7 @@ exports.getTrendingBooks = async (req, res) => {
       trendingBooks.map(async trending => {
         const book = trending.book;
 
-        // Get all reviews for the book
+        // Get all reviews
         const reviews = await Review.find({ book: book._id })
           .populate('user', 'firstName lastName profileImage')
           .lean();
@@ -88,7 +88,7 @@ exports.getTrendingBooks = async (req, res) => {
           reviewer: r.user,
         }));
 
-        // Calculate average rating
+        // Calculate rating
         const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
         const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
 
@@ -97,17 +97,15 @@ exports.getTrendingBooks = async (req, res) => {
 
         const { authorId, ...restBook } = book;
 
+        // Flatten book + trending info
         return {
-          _id: trending._id,
+          ...restBook,
+          authorDetails: authorId,
+          reviews: transformedReviews,
+          likeCount,
+          averageRating,
           position: trending.position,
           addedAt: trending.addedAt,
-          book: {
-            ...restBook,
-            authorDetails: authorId,
-            reviews: transformedReviews,
-            likeCount,
-            averageRating
-          }
         };
       })
     );
