@@ -57,16 +57,17 @@ exports.getLikesByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const likes = await BookLike.find({ user: userId })
-      .populate({
-        path: 'book',
-        select: 'name coverImage price author',
-        populate: {
-          path: 'author',
-          select: 'name'
-        }
-      })
-      .populate('user', 'name email');
+ const likes = await BookLike.find({ user: userId })
+  .populate({
+    path: 'book',
+    select: 'name coverImage price authorId',
+    populate: {
+      path: 'authorId', // must match schema
+      model: 'AuthorInfo',
+      select: 'name'
+    }
+  })
+  .populate('user', 'name email');
 
     // Flatten author name directly into the book object
     const transformedLikes = likes.map(like => {
