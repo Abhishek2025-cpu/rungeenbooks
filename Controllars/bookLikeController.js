@@ -50,6 +50,9 @@ exports.getLikesByCategory = async (req, res) => {
 
 
 // GET /likes/user/:userId
+// controllers/bookLikeController.js
+
+
 exports.getLikesByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -57,22 +60,34 @@ exports.getLikesByUserId = async (req, res) => {
     const likes = await BookLike.find({ user: userId })
       .populate({
         path: 'book',
-        select: 'name coverImage price author', // include author field for nested population
+        select: 'name coverImage price author',
         populate: {
-          path: 'author', // this should match the field in your Book schema
-          model: 'AuthorInfo', // explicitly specify model
-          select: 'name', // only get the author's name
-        },
+          path: 'author',
+          select: 'name'
+        }
       })
       .populate('user', 'name email');
 
+    // Flatten author name directly into the book object
+    const transformedLikes = likes.map(like => {
+      const book = like.book?.toObject?.() || {};
+      return {
+        ...like.toObject(),
+        book: {
+          ...book,
+          authorName: book.author?.name || null
+        }
+      };
+    });
+
     res.json({
       success: true,
-      count: likes.length,
-      likes,
+      count: transformedLikes.length,
+      likes: transformedLikes
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 

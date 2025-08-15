@@ -19,21 +19,6 @@ const bookLikeSchema = new mongoose.Schema({
   },
 });
 
-
-const bookSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  coverImage: { type: String, required: true },
-  price: { type: Number, required: true },
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'AuthorInfo', // exact model name from authorInfoModel.js
-    required: true
-  }
-}, { timestamps: true });
-
-module.exports = mongoose.model('Book', bookSchema);
-
-
 // Prevent duplicate likes by same user on same book
 bookLikeSchema.index({ book: 1, user: 1 }, { unique: true });
 
