@@ -3,6 +3,7 @@
 const BookLike = require('../Models/bookLikeModel');
 const Book = require('../Models/Book');
 const User = require('../Models/User');
+const Author = require('../Models/authorInfoModel');
 
 // PATCH /like
 exports.toggleLikeBook = async (req, res) => {
@@ -54,7 +55,15 @@ exports.getLikesByUserId = async (req, res) => {
     const { userId } = req.params;
 
     const likes = await BookLike.find({ user: userId })
-      .populate('book', 'name coverImage price') // You can customize the fields
+      .populate({
+        path: 'book',
+        select: 'name coverImage price author', // include author field for nested population
+        populate: {
+          path: 'author', // this should match the field in your Book schema
+          model: 'AuthorInfo', // explicitly specify model
+          select: 'name', // only get the author's name
+        },
+      })
       .populate('user', 'name email');
 
     res.json({
@@ -66,3 +75,4 @@ exports.getLikesByUserId = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
