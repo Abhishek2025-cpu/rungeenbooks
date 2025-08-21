@@ -1,3 +1,5 @@
+
+const crypto = require("crypto");
 const mongoose = require('mongoose');
 const Razorpay = require("razorpay");
 const Order = require("../Models/Order");
@@ -87,21 +89,58 @@ exports.createOrder = async (req, res) => {
 // Verify payment and update status
 exports.verifyPayment = async (req, res) => {
   try {
-    const { orderId, paymentId, status } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    const order = await Order.findOne({ orderId });
-
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+    // 1. Basic Validation: Ensure all required fields are received
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Payment details are required." });
     }
 
-    order.paymentId = paymentId;
-    order.status = status || 'paid';
-    await order.save();
+    // 2. Create the Signature on your Server
+    // This must be done on the server to be secure, using your secret key
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
 
-    res.status(200).json({ success: true, message: 'Payment verified', order });
+    const expectedSignature = crypto
+      .createHmac("sha256", "YOUR_NEW_SECRET_KEY_SECRET") // Use the same secret as in createOrder
+      .update(body.toString())
+      .digest("hex");
+
+    // 3. Compare the signatures
+    const isAuthentic = expectedSignature === razorpay_signature;
+
+    if (isAuthentic) {
+      // Payment is authentic and verified. Now, save the details to your database.
+      
+      // Find the order in your database
+      const order = await Order.findOne({ orderId: razorpay_order_id });
+      if (!order) {
+        return res.status(404).json({ success: false, message: "Order not found in our system." });
+      }
+
+      // Update the order with payment details
+      order.paymentId = razorpay_payment_id;
+      order.status = 'paid'; // Mark the status as paid
+      order.signature = razorpay_signature; // Optionally store the signature
+
+      await order.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Payment verified and order updated successfully.',
+        orderId: razorpay_order_id,
+      });
+
+    } else {
+      // Payment verification failed
+      return res.status(400).json({ success: false, message: "Payment verification failed. Invalid signature." });
+    }
+
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("🔥 verifyPayment Error:", err);
+    res.status(500).json({ 
+        success: false, 
+        message: "Internal Server Error: " + err.message 
+    });
   }
 };
 
