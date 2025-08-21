@@ -7,8 +7,8 @@ const User = require("../Models/User");
 // ✅ Initialize Razorpay with keys hardcoded directly for testing.
 // This block is now correctly included.
 const razorpayInstance = new Razorpay({
-  key_id: "rzp_test_R3vTwa7lyp8uO1",
-  key_secret: "en9uUmqUZb0kqokSFtt6Zb1y",
+  key_id: "rzp_test_WFobdSiykj0jlI",
+  key_secret: "4mAexiEcJUH7DIcG4utkVJYS",
 });
 
 // Create a new Razorpay order
