@@ -1,32 +1,14 @@
-// At the VERY TOP of your main server file (e.g., app.js or index.js),
-// you MUST have this line:
-// require('dotenv').config();
+// NOTE: We are NOT using require('dotenv').config() for this test file.
 
 const Razorpay = require("razorpay");
 const Order = require("../Models/Order");
 const Book = require("../Models/Book");
 const User = require("../Models/User");
 
-// ================== DIAGNOSTIC CHECK ==================
-// Add these lines to check if your .env file is being loaded.
-console.log("-----------------------------------------");
-console.log("LOADING RAZORPAY CREDENTIALS...");
-if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  console.error("🔥 FATAL ERROR: Razorpay Key ID or Key Secret is not defined.");
-  console.error("🔥 Please check your .env file and ensure it is loaded correctly.");
-  // Optional: exit the process if keys are missing in production
-  // process.exit(1); 
-} else {
-  console.log("✅ Razorpay Key ID loaded successfully.");
-}
-console.log("-----------------------------------------");
-// ======================================================
-
-
-// Initialize Razorpay with keys from environment variables
+// ✅ Initialize Razorpay with keys hardcoded directly for testing.
 const razorpayInstance = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: "rzp_test_R3vTwa7lyp8uO1",
+  key_secret: "en9uUmqUZb0kqokSFtt6Zb1y",
 });
 
 // Create a new Razorpay order
@@ -80,7 +62,8 @@ exports.createOrder = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Order created successfully",
-      keyId: process.env.RAZORPAY_KEY_ID,
+      // Also hardcoding the keyId in the response for consistency
+      keyId: "rzp_test_R3vTwa7lyp8uO1", 
       razorpayOrderId: razorpayOrder.id,
       amount: amountInPaise,
       currency: "INR",
@@ -88,14 +71,12 @@ exports.createOrder = async (req, res) => {
     });
 
   } catch (err) {
-    // ============= NEW, MORE ROBUST CATCH BLOCK =============
-    console.error("🔥 FULL ERROR OBJECT:", err); // This will show the whole error in your console
+    console.error("🔥 FULL ERROR OBJECT:", err); 
 
     let errorMessage = "An unknown error occurred.";
     if (err.message) {
       errorMessage = err.message;
     } else if (err.error && err.error.description) {
-      // This handles specific Razorpay API error structures
       errorMessage = err.error.description;
     }
 
@@ -103,10 +84,8 @@ exports.createOrder = async (req, res) => {
       success: false,
       message: "Internal Server Error: " + errorMessage,
     });
-    // ==========================================================
   }
 };
-
 
 
 // Verify payment and update status
