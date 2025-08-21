@@ -94,14 +94,15 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: "Payment details are required." });
     }
     
-    // ✅ Using the official Razorpay utility for verification
-    const isAuthentic = Razorpay.utils.verifyPaymentSignature({
+    // ✅ CORRECTED: Use the 'razorpayInstance' you created earlier
+    const isAuthentic = razorpayInstance.utils.verifyPaymentSignature({
         order_id: razorpay_order_id,
         payment_id: razorpay_payment_id
-    }, razorpay_signature, process.env.RAZORPAY_KEY_SECRET); // It uses the same secret key
+    }, razorpay_signature, process.env.RAZORPAY_KEY_SECRET);
 
     if (isAuthentic) {
       // Payment is authentic. Update your database.
+      // Your logic here is correct based on the schema you provided.
       const order = await Order.findOne({ orderId: razorpay_order_id });
       if (!order) {
         return res.status(404).json({ success: false, message: "Order not found." });
@@ -109,7 +110,8 @@ exports.verifyPayment = async (req, res) => {
 
       order.paymentId = razorpay_payment_id;
       order.status = 'paid';
-      order.signature = razorpay_signature;
+      // You can also store the signature if you want, but it's optional
+      // order.signature = razorpay_signature;
 
       await order.save();
 
@@ -132,6 +134,8 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
+
+
 // Fetch all orders for a user
 exports.getUserOrders = async (req, res) => {
   try {
