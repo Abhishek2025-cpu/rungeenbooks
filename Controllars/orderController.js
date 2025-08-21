@@ -26,18 +26,17 @@ exports.createOrder = async (req, res) => {
 
     const amountInPaise = book.price * 100;
 
- const razorpayOrder = await razorpayInstance.orders.create({
-  amount: amountInPaise,
-  currency: "INR",
-  receipt: `receipt_order_${Date.now()}`,
-});
-
+    const razorpayOrder = await razorpayInstance.orders.create({
+      amount: amountInPaise,
+      currency: "INR",
+      receipt: `receipt_order_${Date.now()}`,
+    });
 
     const newOrder = new Order({
       user: userId,
       book: bookId,
       orderId: razorpayOrder.id,
-      amount: book.price
+      amount: book.price,
     });
 
     await newOrder.save();
@@ -48,12 +47,18 @@ exports.createOrder = async (req, res) => {
       razorpayOrderId: razorpayOrder.id,
       amount: book.price,
       currency: "INR",
-      order: newOrder
+      order: newOrder,
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("🔥 Razorpay createOrder error:", err); // log in server console
+    res.status(500).json({
+      success: false,
+      message: err.message,  // 👈 send readable error
+      stack: err.stack       // 👈 (optional) send full stack for debugging
+    });
   }
 };
+
 
 
 
