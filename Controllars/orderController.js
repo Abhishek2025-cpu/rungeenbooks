@@ -1,7 +1,13 @@
-const Razorpay = require('../config/razorpay');
-const Order = require('../Models/Order');
-const Book = require('../Models/Book');
-const User = require('../Models/User');
+const Razorpay = require("razorpay");
+const Order = require("../Models/Order");
+const Book = require("../Models/Book");
+const User = require("../Models/User");
+
+// ✅ Initialize Razorpay with Key & Secret
+const razorpayInstance = new Razorpay({
+  key_id: "rzp_test_peX01P5vxyNOOw",       // <-- Your keyId
+  key_secret: "pb0jXk8ovEuFQggCfvoey9Am", // <-- Your secret
+});
 
 // Create a new Razorpay order
 exports.createOrder = async (req, res) => {
@@ -12,14 +18,14 @@ exports.createOrder = async (req, res) => {
     const user = await User.findById(userId);
 
     if (!book || !user) {
-      return res.status(404).json({ message: 'Book or User not found' });
+      return res.status(404).json({ message: "Book or User not found" });
     }
 
     const amountInPaise = book.price * 100;
 
-    const razorpayOrder = await Razorpay.orders.create({
+    const razorpayOrder = await razorpayInstance.orders.create({
       amount: amountInPaise,
-      currency: 'INR',
+      currency: "INR",
       receipt: `receipt_order_${Date.now()}`,
     });
 
@@ -34,15 +40,17 @@ exports.createOrder = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      keyId: "rzp_test_peX01P5vxyNOOw", // 👈 send this so frontend can match
       razorpayOrderId: razorpayOrder.id,
       amount: book.price,
-      currency: 'INR',
+      currency: "INR",
       order: newOrder,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 // Verify payment and update status
 exports.verifyPayment = async (req, res) => {
