@@ -61,7 +61,7 @@ exports.createOrder = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Order created successfully",
-      keyId: "rzp_test_WFobdSiykj0jlI", // <-- Send the public key to the client
+     
       razorpayOrderId: razorpayOrder.id,
       amount: amountInPaise,
       currency: "INR",
