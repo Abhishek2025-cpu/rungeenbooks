@@ -1,11 +1,11 @@
-// NOTE: We are NOT using require('dotenv').config() for this test file.
-
+const mongoose = require('mongoose');
 const Razorpay = require("razorpay");
 const Order = require("../Models/Order");
 const Book = require("../Models/Book");
 const User = require("../Models/User");
 
 // ✅ Initialize Razorpay with keys hardcoded directly for testing.
+// This block is now correctly included.
 const razorpayInstance = new Razorpay({
   key_id: "rzp_test_R3vTwa7lyp8uO1",
   key_secret: "en9uUmqUZb0kqokSFtt6Zb1y",
@@ -13,41 +13,73 @@ const razorpayInstance = new Razorpay({
 
 // Create a new Razorpay order
 exports.createOrder = async (req, res) => {
+  // STEP 1: Log that the function has started
+  console.log("\n--- [createOrder] Function Started ---");
+
   try {
     const { bookId, userId } = req.body;
 
-    if (!bookId || !userId) {
-      return res.status(400).json({ success: false, message: "bookId and userId are required." });
-    }
+    // STEP 2: Log the incoming data from the client
+    console.log(`[Step 2] Received bookId: ${bookId}, userId: ${userId}`);
 
+    // VALIDATION: Check if IDs are valid MongoDB ObjectIds before querying
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      console.error("[ERROR] Invalid bookId format.");
+      return res.status(400).json({ success: false, message: `Invalid bookId format: ${bookId}` });
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      console.error("[ERROR] Invalid userId format.");
+      return res.status(400).json({ success: false, message: `Invalid userId format: ${userId}` });
+    }
+    console.log(`[Step 2.5] IDs are in valid format.`);
+
+
+    // STEP 3: Find the book
+    console.log(`[Step 3] Querying database for book with ID: ${bookId}`);
     const book = await Book.findById(bookId);
-    const user = await User.findById(userId);
 
     if (!book) {
+      console.error("[ERROR] Book not found in database.");
       return res.status(404).json({ success: false, message: "Book not found" });
     }
+    console.log(`[Step 4] Book found successfully. Price: ${book.price}`);
+
+
+    // STEP 5: Find the user
+    console.log(`[Step 5] Querying database for user with ID: ${userId}`);
+    const user = await User.findById(userId);
+
     if (!user) {
+      console.error("[ERROR] User not found in database.");
       return res.status(404).json({ success: false, message: "User not found" });
     }
+    console.log(`[Step 6] User found successfully.`);
 
+
+    // STEP 7: Validate the price
     if (typeof book.price !== 'number' || book.price <= 0) {
+      console.error(`[ERROR] Invalid book price. Value is: ${book.price}, Type is: ${typeof book.price}`);
       return res.status(400).json({ success: false, message: "Invalid book price. It must be a positive number." });
     }
+    console.log(`[Step 7] Book price is valid.`);
+
 
     const amountInPaise = Math.round(book.price * 100);
-
     const options = {
       amount: amountInPaise,
       currency: "INR",
       receipt: `receipt_order_${new Date().getTime()}`,
     };
+    console.log(`[Step 8] Prepared Razorpay options:`, options);
 
+
+    // STEP 9: Call Razorpay API
+    console.log(`[Step 9] Sending request to Razorpay...`);
     const razorpayOrder = await razorpayInstance.orders.create(options);
+    console.log(`[Step 10] Razorpay order created successfully. Order ID: ${razorpayOrder.id}`);
 
-    if (!razorpayOrder) {
-      return res.status(500).json({ success: false, message: "Razorpay order creation failed." });
-    }
 
+    // STEP 11: Save to your database
     const newOrder = new Order({
       user: userId,
       book: bookId,
@@ -56,13 +88,14 @@ exports.createOrder = async (req, res) => {
       receipt: razorpayOrder.receipt,
       status: razorpayOrder.status,
     });
-
+    console.log(`[Step 11] Saving new order to local database...`);
     await newOrder.save();
+    console.log(`[Step 12] Order saved to local database successfully.`);
+
 
     res.status(200).json({
       success: true,
       message: "Order created successfully",
-      // Also hardcoding the keyId in the response for consistency
       keyId: "rzp_test_R3vTwa7lyp8uO1", 
       razorpayOrderId: razorpayOrder.id,
       amount: amountInPaise,
@@ -71,13 +104,14 @@ exports.createOrder = async (req, res) => {
     });
 
   } catch (err) {
+    console.error("--- [FATAL ERROR IN CATCH BLOCK] ---");
     console.error("🔥 FULL ERROR OBJECT:", err); 
 
     let errorMessage = "An unknown error occurred.";
-    if (err.message) {
-      errorMessage = err.message;
-    } else if (err.error && err.error.description) {
+    if (err.error && err.error.description) {
       errorMessage = err.error.description;
+    } else if (err.message) {
+      errorMessage = err.message;
     }
 
     res.status(500).json({
