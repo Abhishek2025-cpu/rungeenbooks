@@ -17,8 +17,11 @@ exports.createOrder = async (req, res) => {
     const book = await Book.findById(bookId);
     const user = await User.findById(userId);
 
-    if (!book || !user) {
-      return res.status(404).json({ message: "Book or User not found" });
+    if (!book) {
+      return res.status(404).json({ success: false, message: "Book not found" });
+    }
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     const amountInPaise = book.price * 100;
@@ -26,30 +29,31 @@ exports.createOrder = async (req, res) => {
     const razorpayOrder = await razorpayInstance.orders.create({
       amount: amountInPaise,
       currency: "INR",
-      receipt: `receipt_order_${Date.now()}`,
+      receipt: `receipt_order_${Date.now()}`
     });
 
     const newOrder = new Order({
       user: userId,
       book: bookId,
       orderId: razorpayOrder.id,
-      amount: book.price,
+      amount: book.price
     });
 
     await newOrder.save();
 
     res.status(200).json({
       success: true,
-      keyId: "rzp_test_peX01P5vxyNOOw", // 👈 send this so frontend can match
+      keyId: "rzp_test_peX01P5vxyNOOw",
       razorpayOrderId: razorpayOrder.id,
       amount: book.price,
       currency: "INR",
-      order: newOrder,
+      order: newOrder
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 
 // Verify payment and update status
