@@ -1,5 +1,4 @@
 
-const crypto = require("crypto");
 const mongoose = require('mongoose');
 const Razorpay = require("razorpay");
 const Order = require("../Models/Order");
@@ -94,17 +93,15 @@ exports.verifyPayment = async (req, res) => {
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ success: false, message: "Payment details are required." });
     }
-
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET) // ✅ USES THE MASTER SECRET KEY
-      .update(body.toString())
-      .digest("hex");
-
-    const isAuthentic = expectedSignature === razorpay_signature;
+    
+    // ✅ Using the official Razorpay utility for verification
+    const isAuthentic = Razorpay.utils.verifyPaymentSignature({
+        order_id: razorpay_order_id,
+        payment_id: razorpay_payment_id
+    }, razorpay_signature, process.env.RAZORPAY_KEY_SECRET); // It uses the same secret key
 
     if (isAuthentic) {
+      // Payment is authentic. Update your database.
       const order = await Order.findOne({ orderId: razorpay_order_id });
       if (!order) {
         return res.status(404).json({ success: false, message: "Order not found." });
@@ -118,11 +115,12 @@ exports.verifyPayment = async (req, res) => {
 
       res.status(200).json({
         success: true,
-        message: 'Payment verified and order updated successfully.',
+        message: 'Payment verified successfully.',
         orderId: razorpay_order_id,
       });
 
     } else {
+      // Payment verification failed
       return res.status(400).json({ success: false, message: "Payment verification failed. Invalid signature." });
     }
 
@@ -134,7 +132,6 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
-
 // Fetch all orders for a user
 exports.getUserOrders = async (req, res) => {
   try {
