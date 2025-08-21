@@ -1,12 +1,29 @@
-// At the top of your main server file (e.g., index.js or app.js)
-require("dotenv").config(); // Make sure to run: npm install dotenv
+// At the VERY TOP of your main server file (e.g., app.js or index.js),
+// you MUST have this line:
+// require('dotenv').config();
 
 const Razorpay = require("razorpay");
 const Order = require("../Models/Order");
 const Book = require("../Models/Book");
 const User = require("../Models/User");
 
-// ✅ Initialize Razorpay with keys from environment variables
+// ================== DIAGNOSTIC CHECK ==================
+// Add these lines to check if your .env file is being loaded.
+console.log("-----------------------------------------");
+console.log("LOADING RAZORPAY CREDENTIALS...");
+if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  console.error("🔥 FATAL ERROR: Razorpay Key ID or Key Secret is not defined.");
+  console.error("🔥 Please check your .env file and ensure it is loaded correctly.");
+  // Optional: exit the process if keys are missing in production
+  // process.exit(1); 
+} else {
+  console.log("✅ Razorpay Key ID loaded successfully.");
+}
+console.log("-----------------------------------------");
+// ======================================================
+
+
+// Initialize Razorpay with keys from environment variables
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -17,7 +34,6 @@ exports.createOrder = async (req, res) => {
   try {
     const { bookId, userId } = req.body;
 
-    // Basic validation for incoming data
     if (!bookId || !userId) {
       return res.status(400).json({ success: false, message: "bookId and userId are required." });
     }
@@ -32,57 +48,62 @@ exports.createOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // ✅ Crucial Validation: Ensure price is a valid number
     if (typeof book.price !== 'number' || book.price <= 0) {
-        return res.status(400).json({ success: false, message: "Invalid book price. It must be a positive number." });
+      return res.status(400).json({ success: false, message: "Invalid book price. It must be a positive number." });
     }
 
-    const amountInPaise = Math.round(book.price * 100); // Use Math.round to avoid floating point issues
+    const amountInPaise = Math.round(book.price * 100);
 
     const options = {
-        amount: amountInPaise,
-        currency: "INR",
-        receipt: `receipt_order_${new Date().getTime()}`, // More unique receipt
+      amount: amountInPaise,
+      currency: "INR",
+      receipt: `receipt_order_${new Date().getTime()}`,
     };
 
-    // Create the order on Razorpay's servers
     const razorpayOrder = await razorpayInstance.orders.create(options);
 
-    // If Razorpay order creation fails, it will throw an error and be caught below
     if (!razorpayOrder) {
-        return res.status(500).json({ success: false, message: "Razorpay order creation failed." });
+      return res.status(500).json({ success: false, message: "Razorpay order creation failed." });
     }
 
-    // Save the order details to your own database
     const newOrder = new Order({
       user: userId,
       book: bookId,
-      razorpayOrderId: razorpayOrder.id, // Storing razorpay's order ID
+      razorpayOrderId: razorpayOrder.id,
       amount: book.price,
       receipt: razorpayOrder.receipt,
-      status: razorpayOrder.status, // Store initial status (e.g., 'created')
+      status: razorpayOrder.status,
     });
 
     await newOrder.save();
 
-    // Send back the necessary details to the frontend
     res.status(200).json({
       success: true,
       message: "Order created successfully",
-      keyId: process.env.RAZORPAY_KEY_ID, // Send the public key to the client
+      keyId: process.env.RAZORPAY_KEY_ID,
       razorpayOrderId: razorpayOrder.id,
-      amount: amountInPaise, // It's conventional to send amount in paise to frontend handler
+      amount: amountInPaise,
       currency: "INR",
-      order: newOrder, // Your internal order object
+      order: newOrder,
     });
 
   } catch (err) {
-    console.error("🔥 Razorpay createOrder error:", err);
-    // Send a more specific error message
+    // ============= NEW, MORE ROBUST CATCH BLOCK =============
+    console.error("🔥 FULL ERROR OBJECT:", err); // This will show the whole error in your console
+
+    let errorMessage = "An unknown error occurred.";
+    if (err.message) {
+      errorMessage = err.message;
+    } else if (err.error && err.error.description) {
+      // This handles specific Razorpay API error structures
+      errorMessage = err.error.description;
+    }
+
     res.status(500).json({
       success: false,
-      message: "Internal Server Error: " + err.message,
+      message: "Internal Server Error: " + errorMessage,
     });
+    // ==========================================================
   }
 };
 
