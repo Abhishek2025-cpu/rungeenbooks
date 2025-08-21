@@ -26,11 +26,12 @@ exports.createOrder = async (req, res) => {
 
     const amountInPaise = book.price * 100;
 
-    const razorpayOrder = await razorpayInstance.orders.create({
-      amount: amountInPaise,
-      currency: "INR",
-      receipt: `receipt_order_${Date.now()}`
-    });
+ const razorpayOrder = await razorpayInstance.orders.create({
+  amount: amountInPaise,
+  currency: "INR",
+  receipt: `receipt_order_${Date.now()}`,
+});
+
 
     const newOrder = new Order({
       user: userId,
