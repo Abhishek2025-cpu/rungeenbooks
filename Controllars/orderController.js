@@ -157,16 +157,23 @@ exports.getUserOrders = async (req, res) => {
     const orders = await Order.find({ user: userId, status: 'paid' })
       .populate({
         path: 'book',
-        select: 'name coverImage pdfUrl', // Include pdfUrl only after payment
+        select: 'name coverImage pdfUrl authorId', // include authorId so we can populate
+        populate: {
+          path: 'authorId',
+          model: 'AuthorInfo',
+          select: 'name profile', // you can also add "info" if needed
+        },
       })
       .populate('user', 'firstname lastname email')
       .lean();
 
     res.status(200).json({ success: true, orders });
   } catch (err) {
+    console.error("🔥 getUserOrders Error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 
 
