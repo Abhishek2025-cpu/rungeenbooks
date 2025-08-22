@@ -88,6 +88,8 @@ exports.createOrder = async (req, res) => {
 // Verify payment and update status
 const crypto = require("crypto");
 
+const crypto = require("crypto");
+
 exports.verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -96,16 +98,17 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: "Payment details are required." });
     }
 
-    // ✅ Generate expected signature using HMAC-SHA256
-    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const signString = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSign = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(sign.toString())
+      .update(signString)
       .digest("hex");
 
-    const isAuthentic = expectedSign === razorpay_signature;
+    console.log("📝 signString:", signString);
+    console.log("📝 expectedSign:", expectedSign);
+    console.log("📝 providedSignature:", razorpay_signature);
 
-    if (isAuthentic) {
+    if (expectedSign === razorpay_signature) {
       const order = await Order.findOne({ orderId: razorpay_order_id });
       if (!order) {
         return res.status(404).json({ success: false, message: "Order not found." });
@@ -113,9 +116,6 @@ exports.verifyPayment = async (req, res) => {
 
       order.paymentId = razorpay_payment_id;
       order.status = "paid";
-      // optional: save signature
-      // order.signature = razorpay_signature;
-
       await order.save();
 
       return res.status(200).json({
@@ -137,6 +137,7 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
+
 
 
 // Fetch all orders for a user
