@@ -11,6 +11,8 @@ router.put('/update/:id', upload, bookContr.updateBook);
 router.delete('/delete/:id', bookContr.deleteBook);
 router.patch('/toggle/:id', bookContr.toggleBookStatus);
 router.get('/latest', bookContr.getLatestBooks);
+router.get('/search', bookContr.searchBooks);
+router.get('/filter', bookContr.filterBooks);
 
 
 module.exports = router;

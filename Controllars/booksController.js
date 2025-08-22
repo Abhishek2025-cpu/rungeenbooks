@@ -354,6 +354,68 @@ exports.getLatestBooks = async (req, res) => {
 
 
 
+// ...existing code...
+
+// Search books by name and category
+exports.searchBooks = async (req, res) => {
+  try {
+    const { name, categoryId } = req.query;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Book name is required for search' });
+    }
+
+    const query = {
+      name: { $regex: name, $options: 'i' }
+    };
+    if (categoryId) {
+      query.category = categoryId;
+    }
+
+    const books = await Book.find(query).lean();
+
+    res.status(200).json({
+      message: 'Books fetched successfully',
+      books
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Something went wrong', details: err.message });
+  }
+};
+
+// Filter books by age and price
+exports.filterBooks = async (req, res) => {
+  try {
+    const { minAge, maxAge, minPrice, maxPrice } = req.query;
+
+    const query = {};
+
+    if (minAge || maxAge) {
+      query.age = {};
+      if (minAge) query.age.$gte = Number(minAge);
+      if (maxAge) query.age.$lte = Number(maxAge);
+    }
+
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    const books = await Book.find(query).lean();
+
+    res.status(200).json({
+      message: 'Books filtered successfully',
+      books
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Something went wrong', details: err.message });
+  }
+};
+
+
+
+
 
 
 
