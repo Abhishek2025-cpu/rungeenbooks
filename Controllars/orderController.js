@@ -52,7 +52,7 @@ exports.createOrder = async (req, res) => {
     if (!book) return res.status(404).json({ success: false, message: "Book not found" });
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    if (typeof book.price !== 'number' || book.price <= 0) {
+    if (typeof book.price !== "number" || book.price <= 0) {
       return res.status(400).json({ success: false, message: "Invalid book price." });
     }
 
@@ -64,22 +64,26 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // ✅ Convert INR price → selected currency using exchangerate.host
+    // ✅ Convert INR price → selected currency using Frankfurter (no API key required)
     let convertedPrice = book.price;
     if (currency_code !== "INR") {
-    const fx = await axios.get("https://api.frankfurter.app/latest", {
-  params: { amount: book.price, from: "INR", to: currency_code }
-});
+      try {
+        const fx = await axios.get("https://api.frankfurter.app/latest", {
+          params: { amount: book.price, from: "INR", to: currency_code }
+        });
 
-if (fx.data && fx.data.rates && fx.data.rates[currency_code]) {
-  convertedPrice = fx.data.rates[currency_code];
-} else {
-  return res.status(500).json({
-    success: false,
-    message: "Currency conversion failed. Try again later."
-  });
-}
-
+        if (fx.data && fx.data.rates && fx.data.rates[currency_code]) {
+          convertedPrice = fx.data.rates[currency_code];
+        } else {
+          throw new Error("Invalid conversion response");
+        }
+      } catch (error) {
+        console.error("⚠️ Currency API Error:", error.message);
+        return res.status(502).json({
+          success: false,
+          message: "Currency conversion failed. Please try again later."
+        });
+      }
     }
 
     const amountInSubunits = Math.round(convertedPrice * 100);
@@ -87,17 +91,17 @@ if (fx.data && fx.data.rates && fx.data.rates[currency_code]) {
     const options = {
       amount: amountInSubunits,
       currency: currency_code,
-      receipt: `receipt_order_${new Date().getTime()}`
+      receipt: `receipt_order_${Date.now()}`
     };
 
     const razorpayOrder = await razorpayInstance.orders.create(options);
 
-    // Save in DB
+    // ✅ Save order in DB
     const newOrder = new Order({
       user: userId,
       book: bookId,
       orderId: razorpayOrder.id,
-      amount: convertedPrice, // ✅ store converted price
+      amount: convertedPrice, // converted price in chosen currency
       currency: currency_code,
       receipt: razorpayOrder.receipt,
       status: razorpayOrder.status,
@@ -118,13 +122,14 @@ if (fx.data && fx.data.rates && fx.data.rates[currency_code]) {
 
   } catch (err) {
     console.error("🔥 createOrder Error:", err);
-
     res.status(500).json({
       success: false,
       message: "Internal Server Error: " + (err.message || "Unknown error"),
     });
   }
 };
+
+
 
 
 // Verify payment and update status
