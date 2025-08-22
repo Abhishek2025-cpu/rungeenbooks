@@ -86,6 +86,8 @@ exports.createOrder = async (req, res) => {
 
 
 // Verify payment and update status
+const crypto = require("crypto");
+
 exports.verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -93,44 +95,45 @@ exports.verifyPayment = async (req, res) => {
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ success: false, message: "Payment details are required." });
     }
-    
-    // ✅ CORRECTED: Use the 'razorpayInstance' you created earlier
-    const isAuthentic = razorpayInstance.utils.verifyPaymentSignature({
-        order_id: razorpay_order_id,
-        payment_id: razorpay_payment_id
-    }, razorpay_signature, process.env.RAZORPAY_KEY_SECRET);
+
+    // ✅ Generate expected signature using HMAC-SHA256
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(sign.toString())
+      .digest("hex");
+
+    const isAuthentic = expectedSign === razorpay_signature;
 
     if (isAuthentic) {
-      // Payment is authentic. Update your database.
-      // Your logic here is correct based on the schema you provided.
       const order = await Order.findOne({ orderId: razorpay_order_id });
       if (!order) {
         return res.status(404).json({ success: false, message: "Order not found." });
       }
 
       order.paymentId = razorpay_payment_id;
-      order.status = 'paid';
-      // You can also store the signature if you want, but it's optional
+      order.status = "paid";
+      // optional: save signature
       // order.signature = razorpay_signature;
 
       await order.save();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
-        message: 'Payment verified successfully.',
+        message: "Payment verified successfully.",
         orderId: razorpay_order_id,
       });
-
     } else {
-      // Payment verification failed
-      return res.status(400).json({ success: false, message: "Payment verification failed. Invalid signature." });
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed. Invalid signature.",
+      });
     }
-
   } catch (err) {
     console.error("🔥 verifyPayment Error:", err);
-    res.status(500).json({ 
-        success: false, 
-        message: "Internal Server Error: " + err.message 
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error: " + err.message,
     });
   }
 };
