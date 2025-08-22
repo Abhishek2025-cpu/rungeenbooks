@@ -88,6 +88,12 @@ exports.createOrder = async (req, res) => {
 // Verify payment and update status
 const crypto = require("crypto");
 
+// Verify payment and update status
+const crypto = require("crypto");
+
+// same secret you used in razorpayInstance
+const RAZORPAY_KEY_SECRET = "4mAexiEcJUH7DIcG4utkVJYS"; // <-- your real secret
+
 exports.verifyPayment = async (req, res) => {
   try {
     // Accept both frontend (paymentId, orderId, orderSignature) 
@@ -100,10 +106,10 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: "Payment details are required." });
     }
 
-    // ✅ Create signature string
+    // ✅ Generate expected signature using the same secret as razorpayInstance
     const signString = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSign = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", RAZORPAY_KEY_SECRET)
       .update(signString)
       .digest("hex");
 
@@ -140,6 +146,7 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
+
 
 
 
