@@ -90,13 +90,18 @@ const crypto = require("crypto");
 
 exports.verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    // Accept both frontend (paymentId, orderId, orderSignature) 
+    // and Razorpay standard names (razorpay_payment_id, etc.)
+    const razorpay_order_id = req.body.orderId || req.body.razorpay_order_id;
+    const razorpay_payment_id = req.body.paymentId || req.body.razorpay_payment_id;
+    const razorpay_signature = req.body.orderSignature || req.body.razorpay_signature;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ success: false, message: "Payment details are required." });
     }
 
-    const signString = razorpay_order_id + "|" + razorpay_payment_id;
+    // ✅ Create signature string
+    const signString = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSign = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(signString)
