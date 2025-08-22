@@ -67,18 +67,19 @@ exports.createOrder = async (req, res) => {
     // ✅ Convert INR price → selected currency using exchangerate.host
     let convertedPrice = book.price;
     if (currency_code !== "INR") {
-      const fx = await axios.get(`https://api.exchangerate.host/convert`, {
-        params: { from: "INR", to: currency_code, amount: book.price }
-      });
+    const fx = await axios.get("https://api.frankfurter.app/latest", {
+  params: { amount: book.price, from: "INR", to: currency_code }
+});
 
-      if (fx.data && fx.data.result) {
-        convertedPrice = fx.data.result;
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: "Currency conversion failed. Try again later."
-        });
-      }
+if (fx.data && fx.data.rates && fx.data.rates[currency_code]) {
+  convertedPrice = fx.data.rates[currency_code];
+} else {
+  return res.status(500).json({
+    success: false,
+    message: "Currency conversion failed. Try again later."
+  });
+}
+
     }
 
     const amountInSubunits = Math.round(convertedPrice * 100);
