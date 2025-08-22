@@ -4,6 +4,7 @@ const Razorpay = require("razorpay");
 const Order = require("../Models/Order");
 const Book = require("../Models/Book");
 const User = require("../Models/User");
+const axios = require('axios'); 
 const currencies = {
   'INR': '₹',
   'USD': '$',
@@ -39,51 +40,63 @@ exports.createOrder = async (req, res) => {
     const { bookId, userId, currency_code } = req.body;
 
     if (!bookId || !userId || !currency_code) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "bookId, userId and currency_code are required." 
+      return res.status(400).json({
+        success: false,
+        message: "bookId, userId and currency_code are required."
       });
     }
 
     const book = await Book.findById(bookId);
     const user = await User.findById(userId);
 
-    if (!book) {
-      return res.status(404).json({ success: false, message: "Book not found" });
-    }
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
+    if (!book) return res.status(404).json({ success: false, message: "Book not found" });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
     if (typeof book.price !== 'number' || book.price <= 0) {
       return res.status(400).json({ success: false, message: "Invalid book price." });
     }
 
-    // ✅ validate currency
+    // ✅ Validate currency
     if (!currencies[currency_code]) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Unsupported currency code: ${currency_code}` 
+      return res.status(400).json({
+        success: false,
+        message: `Unsupported currency code: ${currency_code}`
       });
     }
 
-    // Razorpay requires smallest currency unit (paise, cents, etc.)
-    const amountInSubunits = Math.round(book.price * 100);
+    // ✅ Convert INR price → selected currency using exchangerate.host
+    let convertedPrice = book.price;
+    if (currency_code !== "INR") {
+      const fx = await axios.get(`https://api.exchangerate.host/convert`, {
+        params: { from: "INR", to: currency_code, amount: book.price }
+      });
+
+      if (fx.data && fx.data.result) {
+        convertedPrice = fx.data.result;
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Currency conversion failed. Try again later."
+        });
+      }
+    }
+
+    const amountInSubunits = Math.round(convertedPrice * 100);
 
     const options = {
       amount: amountInSubunits,
-      currency: currency_code, // ✅ use client-provided currency
-      receipt: `receipt_order_${new Date().getTime()}`,
+      currency: currency_code,
+      receipt: `receipt_order_${new Date().getTime()}`
     };
 
     const razorpayOrder = await razorpayInstance.orders.create(options);
 
-    // Save to DB
+    // Save in DB
     const newOrder = new Order({
       user: userId,
       book: bookId,
       orderId: razorpayOrder.id,
-      amount: book.price,
+      amount: convertedPrice, // ✅ store converted price
       currency: currency_code,
       receipt: razorpayOrder.receipt,
       status: razorpayOrder.status,
@@ -97,23 +110,17 @@ exports.createOrder = async (req, res) => {
       razorpayOrderId: razorpayOrder.id,
       amount: amountInSubunits,
       currency: currency_code,
-      currency_symbol: currencies[currency_code], // ✅ return symbol for frontend
+      currency_symbol: currencies[currency_code],
+      convertedPrice,
       order: newOrder,
     });
 
   } catch (err) {
     console.error("🔥 createOrder Error:", err);
 
-    let errorMessage = "An unknown error occurred.";
-    if (err.error && err.error.description) {
-      errorMessage = err.error.description;
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-
     res.status(500).json({
       success: false,
-      message: "Internal Server Error: " + errorMessage,
+      message: "Internal Server Error: " + (err.message || "Unknown error"),
     });
   }
 };
