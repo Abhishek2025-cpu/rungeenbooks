@@ -4,20 +4,45 @@ const Razorpay = require("razorpay");
 const Order = require("../Models/Order");
 const Book = require("../Models/Book");
 const User = require("../Models/User");
-
+const currencies = {
+  'INR': '₹',
+  'USD': '$',
+  'AUD': 'AU$',
+  'EUR': '€',
+  'AED': 'AED',
+  'JPY': '¥',
+  'GBP': '£',
+  'RUB': 'руб.',
+  'ZAR': 'R',
+  'MYR': 'RM',
+  'PKR': '₨',
+  'SAR': '﷼',
+  'SGD': 'S$',
+  'THB': '฿',
+  'VND': '₫',
+  'TRY': '₺',
+  'PHP': '₱',
+  'NZD': '$',
+  'NPR': '₨',
+  'BDT': '৳',
+  'PLN': 'zł',
+};
 // Use your new, secret keys here. I'm using placeholders.
 const razorpayInstance = new Razorpay({
-  key_id: "rzp_test_WFobdSiykj0jlI", // <-- Replace with your real, secret key
-  key_secret: "4mAexiEcJUH7DIcG4utkVJYS", // <-- Replace with your real, secret secret
+  key_id: "uidehddwhjdejdej", // <-- Replace with your real, secret key
+  key_secret: "gidehkdededekdejkjkde", // <-- Replace with your real, secret secret
 });
 
 // Create a new Razorpay order
 exports.createOrder = async (req, res) => {
   try {
-    const { bookId, userId } = req.body;
+    const { bookId, userId, currency_code } = req.body;
 
-    if (!bookId || !userId) {
-      return res.status(400).json({ success: false, message: "bookId and userId are required." });
+    if (!bookId || !userId || !currency_code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "bookId, userId and currency_code are required." 
+      });
     }
 
     const book = await Book.findById(bookId);
@@ -34,41 +59,50 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid book price." });
     }
 
-    const amountInPaise = Math.round(book.price * 100);
+    // ✅ validate currency
+    if (!currencies[currency_code]) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Unsupported currency code: ${currency_code}` 
+      });
+    }
+
+    // Razorpay requires smallest currency unit (paise, cents, etc.)
+    const amountInSubunits = Math.round(book.price * 100);
+
     const options = {
-      amount: amountInPaise,
-      currency: "INR",
+      amount: amountInSubunits,
+      currency: currency_code, // ✅ use client-provided currency
       receipt: `receipt_order_${new Date().getTime()}`,
     };
 
-    // This part is now working!
     const razorpayOrder = await razorpayInstance.orders.create(options);
 
-    // Create the order object to save in your DB
+    // Save to DB
     const newOrder = new Order({
       user: userId,
       book: bookId,
-      orderId: razorpayOrder.id, // ✅ CORRECTED LINE
+      orderId: razorpayOrder.id,
       amount: book.price,
+      currency: currency_code,
       receipt: razorpayOrder.receipt,
       status: razorpayOrder.status,
     });
 
     await newOrder.save();
 
-    // Success!
     res.status(200).json({
       success: true,
       message: "Order created successfully",
-     
       razorpayOrderId: razorpayOrder.id,
-      amount: amountInPaise,
-      currency: "INR",
+      amount: amountInSubunits,
+      currency: currency_code,
+      currency_symbol: currencies[currency_code], // ✅ return symbol for frontend
       order: newOrder,
     });
 
   } catch (err) {
-    console.error("🔥 createOrder Error:", err); 
+    console.error("🔥 createOrder Error:", err);
 
     let errorMessage = "An unknown error occurred.";
     if (err.error && err.error.description) {
