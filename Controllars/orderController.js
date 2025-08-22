@@ -88,8 +88,6 @@ exports.createOrder = async (req, res) => {
 // Verify payment and update status
 const crypto = require("crypto");
 
-// Verify payment and update status
-const crypto = require("crypto");
 
 // same secret you used in razorpayInstance
 const RAZORPAY_KEY_SECRET = "4mAexiEcJUH7DIcG4utkVJYS"; // <-- your real secret
