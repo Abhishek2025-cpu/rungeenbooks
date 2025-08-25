@@ -372,16 +372,41 @@ exports.searchBooks = async (req, res) => {
       query.category = categoryId;
     }
 
-    const books = await Book.find(query).lean();
+    const books = await Book.find(query)
+      .populate('category')
+      .populate('authorId', '_id name info profile') // populate AuthorInfo fields
+      .lean();
+
+    const cleanBooks = books.map(book => {
+      const { category, authorId, ...rest } = book;
+
+      const cleanCategory = category ? { ...category } : null;
+      if (cleanCategory && cleanCategory.images) {
+        delete cleanCategory.images;
+      }
+
+      return {
+        ...rest,
+        category: cleanCategory,
+        authorDetails: authorId ? {
+          _id: authorId._id,
+          name: authorId.name,
+          info: authorId.info,
+          profile: authorId.profile
+        } : null
+      };
+    });
 
     res.status(200).json({
+      success: true,
       message: 'Books fetched successfully',
-      books
+      books: cleanBooks
     });
   } catch (err) {
     res.status(500).json({ error: 'Something went wrong', details: err.message });
   }
 };
+
 
 // Filter books by age and price
 exports.filterBooks = async (req, res) => {
