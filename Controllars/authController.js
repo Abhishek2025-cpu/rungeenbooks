@@ -1,6 +1,7 @@
 const User = require('../Models/User');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const { getTransporter } = require('../utilis/mailer');
 const fs = require('fs'); 
 const path = require('path');
 
@@ -19,20 +20,12 @@ const transporter = nodemailer.createTransport({
 // ✅ SIGNUP
 exports.signup = async (req, res) => {
   try {
-    const {
-      firstname, lastname, username, country_code,
-      phone, email, password
-    } = req.body;
+    const { firstname, lastname, username, country_code, phone, email, password } = req.body;
 
     // Check for existing email, username or phone
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) return res.status(400).json({ success: 0, message: 'Email already registered' });
-
-    const existingUsername = await User.findOne({ username });
-    if (existingUsername) return res.status(400).json({ success: 0, message: 'Username already taken' });
-
-    const existingPhone = await User.findOne({ phone });
-    if (existingPhone) return res.status(400).json({ success: 0, message: 'Phone number already registered' });
+    if (await User.findOne({ email })) return res.status(400).json({ success: 0, message: 'Email already registered' });
+    if (await User.findOne({ username })) return res.status(400).json({ success: 0, message: 'Username already taken' });
+    if (await User.findOne({ phone })) return res.status(400).json({ success: 0, message: 'Phone number already registered' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = generateOTP();
@@ -46,8 +39,10 @@ exports.signup = async (req, res) => {
 
     await newUser.save();
 
+    // Dynamic transporter
+    const transporter = await getTransporter();
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"No Reply" <${transporter.options.auth.user}>`,
       to: email,
       subject: 'Your OTP Code',
       text: `Your OTP is ${otp}`
@@ -141,20 +136,17 @@ exports.login = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(404).json({ success: 0, message: 'Email not found' });
+    if (!user) return res.status(404).json({ success: 0, message: 'Email not found' });
 
     const otp = generateOTP();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-
     user.otp = otp;
-    user.otpExpires = otpExpires;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
+    const transporter = await getTransporter();
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Support" <${transporter.options.auth.user}>`,
       to: email,
       subject: 'Reset Password OTP',
       text: `Your password reset OTP is ${otp}`

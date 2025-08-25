@@ -20,6 +20,7 @@ const authorInfoRoutes = require('./Routes/authorInfoRoutes'); // ✅ Ensure thi
 const trendingBookRoutes = require('./Routes/trendingBookRoutes');
 const orderRoutes = require('./Routes/orderRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
+const smtpRoutes = require('./Routes/smtpRoutes');
 // Middlewares
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
 app.use(express.json({ limit: '100mb' }));
@@ -42,6 +43,7 @@ app.use('/api/author-info', authorInfoRoutes); // ✅ Ensure this is the correct
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/trending-books', trendingBookRoutes);
+app.use('/api/smtp', smtpRoutes);
 
 
 
