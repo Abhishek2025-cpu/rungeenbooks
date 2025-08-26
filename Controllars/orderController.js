@@ -259,3 +259,20 @@ exports.getSingleOrder = async (req, res) => {
   }
 };
 
+// ADMIN: Delete an order
+exports.deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const deletedOrder = await Order.findByIdAndDelete(orderId);
+
+    if (!deletedOrder) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    res.json({ success: true, message: 'Order deleted successfully' });
+  } catch (err) {
+    console.error("🔥 deleteOrder Error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
