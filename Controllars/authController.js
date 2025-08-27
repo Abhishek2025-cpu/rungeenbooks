@@ -8,43 +8,42 @@ const path = require('path');
 // OTP Generator
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 
-// Nodemailer transporter (This can be removed if getTransporter is always used)
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASS
-//   }
-// });
-
 // Temporary storage for unverified users
-const unverifiedUsers = new Map(); // Using a Map to store users by email
+// Key: email, Value: { signup_data_object_with_otp }
+const unverifiedUsers = new Map();
 
-// ✅ SIGNUP - Temporarily stores user data and sends OTP without saving to DB
+// ✅ SIGNUP - Temporarily stores user data in memory and sends OTP without saving to DB
 exports.signup = async (req, res) => {
   try {
     const { firstname, lastname, username, country_code, phone, email, password } = req.body;
 
-    // Check only for existing email in the database to prevent duplicate verified accounts
+    // IMPORTANT: Check if email already exists in the *database* (meaning it's already verified)
     if (await User.findOne({ email })) {
       return res.status(400).json({ success: 0, message: 'Email already registered and verified.' });
     }
 
-    // Check if email is already in the unverified queue
+    // Check if an OTP is already pending for this email in our temporary storage
     if (unverifiedUsers.has(email)) {
-      return res.status(400).json({ success: 0, message: 'An OTP has already been sent to this email. Please verify.' });
+      // You might want to resend OTP here or just inform the user
+      return res.status(400).json({ success: 0, message: 'An OTP has already been sent to this email. Please verify or try again later.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = generateOTP();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min expiry
 
-    // Store user details temporarily
+    // Store ALL user details (including hashed password and OTP) temporarily in memory
+    // This is the data that will eventually be used to create the User document
     unverifiedUsers.set(email, {
-      firstname, lastname, username, country_code,
-      phone, email, password: hashedPassword,
-      otp, otpExpires,
-      isVerified: false // Explicitly set to false
+      firstname,
+      lastname,
+      username,
+      country_code,
+      phone,
+      email,
+      password: hashedPassword, // Store the hashed password here
+      otp,
+      otpExpires
     });
 
     // Dynamic transporter
@@ -53,7 +52,7 @@ exports.signup = async (req, res) => {
       from: `"No Reply" <${transporter.options.auth.user}>`,
       to: email,
       subject: 'Your OTP Code',
-      text: `Your OTP is ${otp}`
+      text: `Your OTP is ${otp}. It is valid for 10 minutes.`
     });
 
     res.status(200).json({ success: 1, message: 'Signup successful. OTP sent to email. Please verify to complete registration.' });
@@ -63,42 +62,43 @@ exports.signup = async (req, res) => {
   }
 };
 
-// ✅ VERIFY OTP - Saves details to database after successful OTP verification
+// ✅ VERIFY OTP - ONLY saves details to database AFTER successful OTP verification
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const unverifiedUser = unverifiedUsers.get(email);
+    // 1. Retrieve user data from temporary storage
+    const pendingUser = unverifiedUsers.get(email);
 
-    if (!unverifiedUser) {
+    if (!pendingUser) {
       return res.status(404).json({ success: 0, message: 'No pending signup for this email or session expired. Please sign up again.' });
     }
 
-    if (unverifiedUser.isVerified) {
-      return res.status(400).json({ success: 0, message: 'User already verified and registered.' });
-    }
-
-    if (unverifiedUser.otp !== otp || unverifiedUser.otpExpires < new Date()) {
+    // 2. Check for correct OTP and expiry
+    if (pendingUser.otp !== otp || pendingUser.otpExpires < new Date()) {
+      // Optionally, you might want to delete the pendingUser here if OTP is invalid
+      // unverifiedUsers.delete(email); // If you want to force them to sign up again for invalid OTP
       return res.status(400).json({ success: 0, message: 'Invalid or expired OTP' });
     }
 
-    // OTP is valid, now save the user to the database
+    // 3. OTP is valid! Now, and ONLY now, create the User document and save to DB.
     const newUser = new User({
-      firstname: unverifiedUser.firstname,
-      lastname: unverifiedUser.lastname,
-      username: unverifiedUser.username,
-      country_code: unverifiedUser.country_code,
-      phone: unverifiedUser.phone,
-      email: unverifiedUser.email,
-      password: unverifiedUser.password, // This is already hashed
-      isVerified: true, // Mark as verified upon saving
-      otp: null, // Clear OTP fields
-      otpExpires: null
+      firstname: pendingUser.firstname,
+      lastname: pendingUser.lastname,
+      username: pendingUser.username,
+      country_code: pendingUser.country_code,
+      phone: pendingUser.phone,
+      email: pendingUser.email,
+      password: pendingUser.password, // This is the pre-hashed password from signup
+      isVerified: true, // Mark as verified immediately
+      // OTP fields are not saved to the DB for verified users
+      // otp: null, // No need to save these if not needed in the User schema for verified users
+      // otpExpires: null
     });
 
-    await newUser.save();
+    await newUser.save(); // THIS IS THE FIRST DATABASE WRITE FOR THIS USER
 
-    // Remove user from temporary storage
+    // 4. Remove user from temporary storage after successful database save
     unverifiedUsers.delete(email);
 
     res.status(200).json({
