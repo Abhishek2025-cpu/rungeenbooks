@@ -141,56 +141,57 @@ const RAZORPAY_KEY_SECRET = "4mAexiEcJUH7DIcG4utkVJYS"; // <-- your real secret
 
 exports.verifyPayment = async (req, res) => {
   try {
-    // Accept both frontend (paymentId, orderId, orderSignature) 
-    // and Razorpay standard names (razorpay_payment_id, etc.)
-    const razorpay_order_id = req.body.orderId || req.body.razorpay_order_id;
-    const razorpay_payment_id = req.body.paymentId || req.body.razorpay_payment_id;
-    const razorpay_signature = req.body.orderSignature || req.body.razorpay_signature;
+    const {
+      orderId: clientOrderId,
+      paymentId: clientPaymentId,
+      orderSignature: clientSignature,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    // normalize fields
+    const orderId = razorpay_order_id || clientOrderId;
+    const paymentId = razorpay_payment_id || clientPaymentId;
+    const signature = razorpay_signature || clientSignature;
+
+    if (!orderId || !paymentId || !signature) {
       return res.status(400).json({ success: false, message: "Payment details are required." });
     }
 
-    // ✅ Generate expected signature using the same secret as razorpayInstance
-    const signString = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const signString = `${orderId}|${paymentId}`;
     const expectedSign = crypto
       .createHmac("sha256", RAZORPAY_KEY_SECRET)
       .update(signString)
       .digest("hex");
 
-    console.log("📝 signString:", signString);
-    console.log("📝 expectedSign:", expectedSign);
-    console.log("📝 providedSignature:", razorpay_signature);
-
-    if (expectedSign === razorpay_signature) {
-      const order = await Order.findOne({ orderId: razorpay_order_id });
-      if (!order) {
-        return res.status(404).json({ success: false, message: "Order not found." });
-      }
-
-      order.paymentId = razorpay_payment_id;
-      order.status = "paid";
-      await order.save();
-
-      return res.status(200).json({
-        success: true,
-        message: "Payment verified successfully.",
-        orderId: razorpay_order_id,
-      });
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: "Payment verification failed. Invalid signature.",
-      });
+    if (expectedSign !== signature) {
+      return res.status(400).json({ success: false, message: "Invalid payment signature." });
     }
+
+    // ✅ Update in one step
+    const order = await Order.findOneAndUpdate(
+      { orderId },
+      { paymentId, status: "paid" },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found in DB." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Payment verified and order updated.",
+      order
+    });
+
   } catch (err) {
     console.error("🔥 verifyPayment Error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Internal Server Error: " + err.message,
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 
 
