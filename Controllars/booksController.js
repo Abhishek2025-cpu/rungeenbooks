@@ -142,7 +142,6 @@ exports.getBooksByCategory = async (req, res) => {
 
 
 
-
 exports.getBookById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -156,35 +155,51 @@ exports.getBookById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Book not found' });
     }
 
+    // Safe destructure
     const { authorId, category, ...rest } = book;
-    const cleanCategory = { ...category };
-    delete cleanCategory.images;
 
+    // Handle category null
+    const cleanCategory = category
+      ? { ...category, images: undefined } // remove images if present
+      : null;
+
+    // Reviews + safe user mapping
     const reviewsRaw = await Review.find({ book: id })
       .populate('user', '_id firstname lastname profileImage')
       .lean();
 
     const reviews = reviewsRaw.map((review) => ({
       ...review,
-      user: {
-        _id: review.user._id,
-        name: `${review.user.firstname || ''} ${review.user.lastname || ''}`.trim(),
-        profile: review.user.profileImage || '',
-      },
+      user: review.user
+        ? {
+            _id: review.user._id,
+            name: `${review.user.firstname || ''} ${review.user.lastname || ''}`.trim(),
+            profile: review.user.profileImage || '',
+          }
+        : {
+            _id: null,
+            name: 'Deleted User',
+            profile: '',
+          },
     }));
 
+    // Likes
     const likesCount = await BookLike.countDocuments({ book: id });
 
-    const relatedBooks = await Book.find({
-      category: book.category._id,
-      _id: { $ne: id },
-    })
-      .select('name coverImage price isFree')
-      .limit(5)
-      .lean();
+    // Related books — safe category check
+    const relatedBooks = cleanCategory
+      ? await Book.find({
+          category: cleanCategory._id,
+          _id: { $ne: id },
+        })
+          .select('name coverImage price isFree')
+          .limit(5)
+          .lean()
+      : [];
 
+    // Average rating
     const averageRating = reviews.length
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
       : null;
 
     res.json({
@@ -192,15 +207,15 @@ exports.getBookById = async (req, res) => {
       book: {
         ...rest,
         category: cleanCategory,
-        authorDetails: authorId,
+        authorDetails: authorId || null,
         averageRating: averageRating ? parseFloat(averageRating) : 0,
-      reviews,
-      likesCount,
-      relatedBooks,
-      }
-    
+        reviews,
+        likesCount,
+        relatedBooks,
+      },
     });
   } catch (err) {
+    console.error('Get Book By Id Error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
