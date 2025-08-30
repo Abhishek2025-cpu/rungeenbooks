@@ -30,9 +30,12 @@ const currencies = {
 };
 // Use your new, secret keys here. I'm using placeholders.
 const razorpayInstance = new Razorpay({
-  key_id: "rzp_test_WFobdSiykj0jlI", // <-- Replace with your real, secret key
-  key_secret: "4mAexiEcJUH7DIcG4utkVJYS", // <-- Replace with your real, secret secret
+  key_id: " rzp_live_tpZpCYre4JMy2b", // <-- Replace with your real, secret key
+  key_secret: " pb0jXk8ovEuFQggCfvoey9Am", // <-- Replace with your real, secret secret
 });
+
+//  rzp_live_tpZpCYre4JMy2b
+//  pb0jXk8ovEuFQggCfvoey9Am
 
 // Create a new Razorpay order
 exports.createOrder = async (req, res) => {
