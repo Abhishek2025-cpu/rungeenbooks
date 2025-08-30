@@ -84,14 +84,21 @@ exports.getBooksByCategory = async (req, res) => {
           .populate('user', '_id firstname lastname profileImage')
           .lean();
 
-        const reviews = reviewsRaw.map((review) => ({
-          ...review,
-          user: {
-            _id: review.user._id,
-            name: `${review.user.firstname || ''} ${review.user.lastname || ''}`.trim(),
-            profile: review.user.profileImage || '',
-          },
-        }));
+      const reviews = reviewsRaw.map((review) => ({
+  ...review,
+  user: review.user
+    ? {
+        _id: review.user._id,
+        name: `${review.user.firstname || ''} ${review.user.lastname || ''}`.trim(),
+        profile: review.user.profileImage || '',
+      }
+    : {
+        _id: null,
+        name: 'Deleted User',
+        profile: '',
+      },
+}));
+
 
         const likesCount = await BookLike.countDocuments({ book: book._id });
 
