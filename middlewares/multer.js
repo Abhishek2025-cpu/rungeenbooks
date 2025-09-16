@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 // Accept ALL file fields, including dynamic ones like reviewProfile_0
 const upload = multer({
   storage,
-limits: { fileSize: 25 * 1024 * 1024 } // 25MB
+limits: { fileSize:  200 * 1024 * 1024 } // 25MB
 
 }).any(); // Accept any file field
 
