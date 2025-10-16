@@ -322,30 +322,36 @@ exports.getLatestBooks = async (req, res) => {
       categories.map(async (categoryId) => {
         // Step 2: Get the latest book in this category
         const latestBook = await Book.findOne({ category: categoryId })
-          .sort({ updatedAt: -1 }) // newest first
+          .sort({ updatedAt: -1 })
           .lean();
 
         if (!latestBook) return null;
 
-        // Step 3: Enrich with author, reviews, likeCount
-        const authorDetails = await AuthorInfo.findById(latestBook.authorId).lean();
+        // Step 3: Get author details safely
+        const authorDetails = latestBook.authorId
+          ? await AuthorInfo.findById(latestBook.authorId).lean()
+          : null;
 
+        // Step 4: Get reviews safely
         const reviewsRaw = await Review.find({ book: latestBook._id })
-          .populate('user', '_id firstname lastname profileImage')
+          .populate('user', '_id firstName lastName profileImage')
           .lean();
 
-        const reviews = reviewsRaw.map((review) => ({
-          ...review,
-          user: {
-            _id: review.user._id,
-            name: `${review.user.firstname || ''} ${review.user.lastname || ''}`.trim(),
-            profile: review.user.profileImage || '',
-          },
-        }));
+        const reviews = reviewsRaw.map((review) => {
+          const user = review.user || {};
+          return {
+            ...review,
+            user: {
+              _id: user._id || null,
+              name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+              profile: user.profileImage || '',
+            },
+          };
+        });
 
         const averageRating = reviews.length
-          ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-          : null;
+          ? parseFloat((reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1))
+          : 0;
 
         const likeCount = await BookLike.countDocuments({ book: latestBook._id });
 
@@ -354,12 +360,12 @@ exports.getLatestBooks = async (req, res) => {
           authorDetails,
           reviews,
           likeCount,
-          averageRating: averageRating ? parseFloat(averageRating) : 0,
+          averageRating,
         };
       })
     );
 
-    const filteredBooks = latestBooks.filter(Boolean); // remove nulls if any
+    const filteredBooks = latestBooks.filter(Boolean); // remove nulls
 
     res.status(200).json({
       message: 'Latest books from each category fetched successfully',
@@ -373,6 +379,7 @@ exports.getLatestBooks = async (req, res) => {
     });
   }
 };
+
 
 
 
