@@ -20,6 +20,7 @@ const trendingBookRoutes = require('./Routes/trendingBookRoutes');
 const orderRoutes = require('./Routes/orderRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
 const smtpRoutes = require('./Routes/smtpRoutes');
+
 // Middlewares
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
 app.use(express.json({ limit: '100mb' }));
