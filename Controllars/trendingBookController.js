@@ -63,13 +63,11 @@ exports.removeTrendingBook = async (req, res) => {
 // Get all trending books
 exports.getTrendingBooks = async (req, res) => {
   try {
+    // Fetch trending books with author details
     const trendingBooks = await TrendingBook.find()
       .populate({
         path: 'book',
-        populate: {
-          path: 'authorId',
-          model: 'AuthorInfo'
-        }
+        populate: { path: 'authorId', model: 'AuthorInfo' }
       })
       .sort({ position: 1 })
       .lean();
@@ -78,40 +76,47 @@ exports.getTrendingBooks = async (req, res) => {
       trendingBooks.map(async trending => {
         const book = trending.book;
 
-        // Get all reviews
+        // Skip if the book reference is missing
+        if (!book) return null;
+
+        // Fetch reviews with reviewer info
         const reviews = await Review.find({ book: book._id })
           .populate('user', 'firstName lastName profileImage')
           .lean();
 
         const transformedReviews = reviews.map(r => ({
           ...r,
-          reviewer: r.user,
+          reviewer: r.user
         }));
 
-        // Calculate rating
+        // Calculate average rating
         const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
         const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
 
-        // Get like count
+        // Get total like count
         const likeCount = await BookLike.countDocuments({ book: book._id });
 
         const { authorId, ...restBook } = book;
 
-        // Flatten book + trending info
         return {
           ...restBook,
-          authorDetails: authorId,
+          authorDetails: authorId || null,
           reviews: transformedReviews,
           likeCount,
           averageRating,
           position: trending.position,
-          addedAt: trending.addedAt,
+          addedAt: trending.addedAt
         };
       })
     );
 
-    res.json({ success: true, books: booksWithDetails });
+    // Remove nulls if some trending books had missing references
+    const filteredBooks = booksWithDetails.filter(b => b !== null);
+
+    res.json({ success: true, books: filteredBooks });
   } catch (err) {
+    console.error("🔥 getTrendingBooks Error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
